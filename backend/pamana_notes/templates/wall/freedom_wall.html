@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Freedom Wall{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Freedom Wall</h2>
+
+    <!-- Create Post -->
+    <form method="POST" action="{% url 'wall:freedom_wall' %}">
+        {% csrf_token %}
+        {{ post_form.as_p }}
+        <button type="submit" class="btn btn-primary">
+            Post
+        </button>
+    </form>
+
+    <hr>
+
+    <!-- Posts Feed -->
+    {% for post in page_obj %}
+        <div class="card mb-3 p-3 shadow-sm">
+            <p>
+                <strong>{{ post.user.school_id }}</strong>
+                • {{ post.created_at|date:"M d, Y H:i" }}
+            </p>
+
+            <p>{{ post.content }}</p>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'wall:post_detail' post.id %}"
+                   class="btn btn-sm btn-outline-secondary">
+                    View post
+                </a>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted">No posts yet.</p>
+    {% endfor %}
+
+    <!-- Pagination -->
+    <nav class="mt-3">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}">
+                        Previous
+                    </a>
+                </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">
+                    {{ page_obj.number }}
+                </span>
+            </li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}">
+                        Next
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+</div>
+{% endblock %}

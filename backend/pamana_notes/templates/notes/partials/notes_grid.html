@@ -1,0 +1,22 @@
+{% for note in page_obj %}
+<div class="note-card border p-4 rounded mb-4">
+    <h2 class="text-xl font-bold">{{ note.title }}</h2>
+    <p>{{ note.description }}</p>
+    <p class="text-sm text-gray-500">Uploaded by: {{ note.uploader.school_id }}</p>
+
+    {% if user.is_authenticated %}
+        <form method="post" action="{% url 'notes:toggle_save_note' note.id %}">
+            {% csrf_token %}
+            {% if note.id in saved_notes %}
+                <button type="submit" class="text-red-500 font-bold">Unsave</button>
+            {% else %}
+                <button type="submit" class="text-blue-500 font-bold">Save</button>
+            {% endif %}
+        </form>
+    {% endif %}
+
+    <a href="{% url 'notes:note_detail' note.id %}" class="text-blue-700 underline">View Note</a>
+</div>
+{% empty %}
+<p>No notes found.</p>
+{% endfor %}

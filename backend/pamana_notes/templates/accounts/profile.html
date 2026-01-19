@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">My Profile</h2>
+
+    <!-- PROFILE DISPLAY -->
+    <div id="profile-display" class="card p-3 shadow-sm" style="max-width: 500px;">
+        <div class="text-center mb-3">
+            {% if request.user.profile.image %}
+                <img src="{{ request.user.profile.image.url }}"
+                     class="rounded-circle"
+                     width="120"
+                     height="120">
+            {% else %}
+                <img src="{% static 'img/default-avatar.png' %}"
+                     class="rounded-circle"
+                     width="120"
+                     height="120">
+            {% endif %}
+        </div>
+
+        <p><strong>School ID:</strong> {{ request.user.school_id }}</p>
+        <p><strong>Email:</strong> {{ request.user.email }}</p>
+        <p><strong>Course:</strong> {{ request.user.course }}</p>
+
+        {% if profile.bio %}
+            <p><strong>Bio:</strong> {{ profile.bio }}</p>
+        {% endif %}
+
+        <div class="text-center mt-3">
+            <button id="edit-btn" class="btn btn-primary btn-sm">
+                Edit Profile
+            </button>
+        </div>
+    </div>
+
+    <!-- PROFILE EDIT -->
+    <div id="profile-edit"
+         class="card p-3 shadow-sm mt-3"
+         style="max-width: 500px; display:none;">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <div class="text-center">
+                <button type="submit" class="btn btn-success btn-sm">
+                    Save Changes
+                </button>
+                <button type="button"
+                        id="cancel-btn"
+                        class="btn btn-secondary btn-sm">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- SAVED NOTES -->
+    <h3 class="mt-5 mb-3">Saved Notes</h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for note in saved_notes %}
+        <div class="border p-4 rounded shadow">
+            <h4 class="font-semibold">{{ note.title }}</h4>
+
+            <p class="text-sm text-gray-600 mb-2">
+                By {{ note.uploader.school_id }} |
+                {{ note.uploaded_at|date:"M d, Y" }}
+            </p>
+
+            <p class="text-sm">
+                {{ note.description|truncatewords:15 }}
+            </p>
+
+            <a href="{% url 'notes:note_detail' note.pk %}"
+               class="text-blue-500 mt-2 inline-block">
+                View
+            </a>
+
+            <!-- REMOVE SAVE -->
+            <form method="post"
+                  action="{% url 'notes:toggle_save_note' note.id %}"
+                  class="mt-2">
+                {% csrf_token %}
+                <button type="submit"
+                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">
+                    Remove
+                </button>
+            </form>
+        </div>
+        {% empty %}
+            <p class="text-gray-500">
+                You haven’t saved any notes yet.
+            </p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- PROFILE TOGGLE SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const editBtn = document.getElementById("edit-btn");
+    const cancelBtn = document.getElementById("cancel-btn");
+    const displayDiv = document.getElementById("profile-display");
+    const editDiv = document.getElementById("profile-edit");
+
+    if (editBtn) {
+        editBtn.onclick = () => {
+            displayDiv.style.display = "none";
+            editDiv.style.display = "block";
+        };
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = () => {
+            editDiv.style.display = "none";
+            displayDiv.style.display = "block";
+        };
+    }
+});
+</script>
+{% endblock %}

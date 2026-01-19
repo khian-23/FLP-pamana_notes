@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Replies{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center"
+     style="min-height: 80vh;">
+
+    <div class="card shadow-lg p-4"
+         style="max-width: 700px; width: 100%;">
+
+        <!-- Back link -->
+        <a href="{% url 'wall:post_detail' post.id %}"
+           class="btn btn-sm btn-outline-secondary mb-3">
+            ← Back to post
+        </a>
+
+        <!-- Parent comment -->
+        <div class="mb-3">
+            <p class="mb-1">
+                <strong>{{ comment.user.school_id }}</strong>
+                • {{ comment.created_at|date:"M d, Y H:i" }}
+            </p>
+            <p>{{ comment.content }}</p>
+        </div>
+
+        <hr>
+
+        <!-- Replies -->
+        <h6>Replies</h6>
+
+        {% for reply in replies %}
+            <div class="border-start ps-3 mb-2">
+                <p class="mb-1">
+                    <strong>{{ reply.user.school_id }}</strong>
+                    • {{ reply.created_at|date:"M d, Y H:i" }}
+                </p>
+                <p>{{ reply.content }}</p>
+            </div>
+        {% empty %}
+            <p class="text-muted">No replies yet.</p>
+        {% endfor %}
+
+        <hr>
+
+        <!-- Reply form -->
+        <form method="POST"
+              action="{% url 'wall:reply_comment' post.id comment.id %}">
+            {% csrf_token %}
+            {{ comment_form.content }}
+            <button class="btn btn-primary btn-sm mt-2">
+                Reply
+            </button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

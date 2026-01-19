@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Pamana Notes{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.css">
+    <style>
+        /* Optional: smooth fade-out animation for flash messages */
+        .flash-message {
+            transition: opacity 0.5s ease-out;
+        }
+        nav form button {
+            all: unset; /* keep it inline like a link */
+            cursor: pointer;
+            color: inherit;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Flash messages -->
+{% if messages %}
+<div id="messages-container" style="position: fixed; top: 10px; right: 10px; z-index: 1000;">
+    {% for message in messages %}
+        <div class="flash-message" style="
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% else %}#856404{% endif %};
+            background-color: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#fff3cd{% endif %};
+            border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% elif message.tags == 'error' %}#f5c6cb{% else %}#ffeeba{% endif %};
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            opacity: 1;
+        ">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const messages = document.querySelectorAll('.flash-message');
+        messages.forEach(msg => {
+            setTimeout(() => {
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            }, 3000);
+        });
+    });
+</script>
+{% endif %}
+
+<header>
+    <h1><a href="{% url 'core:home' %}">Pamana Notes</a></h1>
+    <nav>
+        <a href="{% url 'core:home' %}">Home</a>
+        <a href="{% url 'notes:note_list' %}">All Notes</a>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'notes:my_notes' %}">My Notes</a>
+            <a href="{% url 'notes:note_upload' %}">Upload Note</a>
+            <a href="{% url 'accounts:profile' %}">Profile</a>
+            <a href="{% url 'wall:freedom_wall' %}">Freedom Wall</a>
+
+            <!-- Logout -->
+            <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Logout</button>
+            </form>
+        {% else %}
+            <a href="{% url 'accounts:login' %}">Login</a>
+            <a href="{% url 'accounts:signup' %}">Register</a>
+        {% endif %}
+    </nav>
+</header>
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    <p>&copy; {{ year|default:"2025" }} Pamana Notes</p>
+</footer>
+
+</body>
+</html>

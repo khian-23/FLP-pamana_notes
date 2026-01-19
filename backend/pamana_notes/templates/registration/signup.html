@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<h2>Create an Account</h2>
+
+<h2>Sign Up</h2>
+<form method="POST" action="{% url 'accounts:signup' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {% if form.errors %}
+    <ul style="color: red;">
+        {% for field, errors in form.errors.items %}
+            <li>{{ field }}:
+                {% for error in errors %}
+                    {{ error }}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+    <input type="hidden" name="next" value="{{ request.GET.next }}">
+    <button type="submit">Sign Up</button>
+</form>
+
+
+
+<p>Already have an account? 
+   <a href="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+       Login here
+   </a>
+</p>
+{% endblock %}

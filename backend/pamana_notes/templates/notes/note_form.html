@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Available Notes</h2>
+
+{% if notes %}
+    <ul>
+        {% for note in notes %}
+            <li>
+                <a href="{% url 'notes:note_detail' note.pk %}">
+                    {{ note.title }}
+                </a>
+                <br>
+                <small>
+                    Uploaded by: {{ note.uploader.username }} <br>
+                    {% if note.course %}
+                        Course: {{ note.course.name }}
+                    {% endif %}
+                </small>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No notes available.</p>
+{% endif %}
+
+{% endblock %}

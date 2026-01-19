@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: pamana_db
+    restart: always
+    environment:
+      POSTGRES_DB: pamana_notes
+      POSTGRES_USER: pamana_user
+      POSTGRES_PASSWORD: mypamana123
+    ports:
+      - "5433:5432"   # host:container (use 5433 to avoid conflict with local Postgres)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pamana_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8081:80"     # host:container (use 8081 instead of 5050 to avoid conflicts)
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

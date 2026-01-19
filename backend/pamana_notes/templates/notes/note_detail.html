@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+.hidden { display: none; }
+
+.reply-bubble {
+    background-color: #f9fafb;
+}
+
+#rating-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+#rating-box {
+    background: white;
+    padding: 24px;
+    width: 320px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+#rating-stars span {
+    font-size: 36px;
+    cursor: pointer;
+    user-select: none;
+    color: #d1d5db;
+    transition: transform 0.15s ease, color 0.15s ease;
+}
+
+#rating-stars span.active {
+    color: #facc15;
+}
+
+#rating-stars span:hover {
+    transform: scale(1.25);
+}
+</style>
+
+<div class="max-w-3xl mx-auto">
+
+<!-- ================= NOTE INFO ================= -->
+<h1 class="text-2xl font-bold">{{ note.title }}</h1>
+<p class="text-sm text-gray-600 mb-2">
+    By {{ note.uploader.school_id }} |
+    {{ note.uploaded_at|date:"M d, Y" }}
+</p>
+<p class="mb-4">{{ note.description }}</p>
+<!-- SAVE / UNSAVE NOTE -->
+{% if request.user.is_authenticated %}
+    <form method="post"
+          action="{% url 'notes:toggle_save_note' note.id %}"
+          class="mb-4">
+        {% csrf_token %}
+
+        {% if is_saved %}
+            <button type="submit"
+                    class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                Remove Save
+            </button>
+        {% else %}
+            <button type="submit"
+                    class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                Save Note
+            </button>
+        {% endif %}
+    </form>
+{% else %}
+    <p class="text-sm text-gray-500">
+        <a href="{% url 'accounts:login' %}" class="underline">Login</a> to save this note.
+    </p>
+{% endif %}
+
+
+{% if note.file %}
+<a href="{% url 'notes:download_note' note.pk %}"
+   class="text-blue-500 underline mb-4 inline-block">
+    Download File
+</a>
+{% endif %}
+
+<hr class="my-6">
+
+<!-- ================= RATE BUTTON ================= -->
+{% if request.user.is_authenticated and request.user != note.uploader and note.is_approved %}
+<div class="flex items-center gap-4 mb-4">
+    <button id="open-rating-overlay"
+            class="bg-yellow-400 px-4 py-2 rounded font-semibold">
+        ⭐ Rate this note
+    </button>
+
+</div>
+{% endif %}
+
+<h4 class="font-semibold">Rating Breakdown</h4>
+{% for row in rating_rows %}
+    <div>{{ row.star }} ★ — {{ row.count }}</div>
+{% empty %}
+    <p class="text-gray-500">No ratings yet.</p>
+{% endfor %}
+
+<hr class="my-6">
+
+<!-- ================= COMMENTS ================= -->
+<h4 class="font-semibold mb-3">Comments</h4>
+
+{% for comment in comments %}
+<div class="mb-8 w-full">
+
+    <!-- TOP-LEVEL COMMENT (LEFT) -->
+    <div class="w-full flex justify-start">
+        <div class="max-w-xl">
+
+            <div class="flex items-center gap-2">
+                <img src="{% if comment.user.profile.image %}
+                            {{ comment.user.profile.image.url }}
+                         {% else %}
+                            {% static 'img/default-avatar.png' %}
+                         {% endif %}"
+                     width="40" height="40"
+                     class="rounded-full">
+                <strong class="text-sm">{{ comment.user.school_id }}</strong>
+            </div>
+            <small class="text-gray-500">
+                {{ comment.created_at|date:"M d, Y h:i A" }}
+            </small>
+            <p class="mt-1">{{ comment.content }}</p>
+
+
+            {% if comment.replies.count %}
+            <div class="mt-1">
+                <button type="button"
+                        class="text-sm text-blue-500 toggle-replies"
+                        data-target="replies-{{ comment.id }}">
+                    Show replies ({{ comment.replies.count }})
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- REPLIES (RIGHT) -->
+    <div id="replies-{{ comment.id }}"
+         class="hidden w-full mt-4 flex flex-col items-end">
+
+        {% for reply in comment.replies.all %}
+        <div class="reply-bubble max-w-md w-full p-3 rounded mb-2 ml-auto">
+
+            <div class="flex items-center gap-2 justify-end">
+                <img src="{% if reply.user.profile.image %}
+                            {{ reply.user.profile.image.url }}
+                         {% else %}
+                            {% static 'img/default-avatar.png' %}
+                         {% endif %}"
+                     width="32" height="32"
+                     class="rounded-full">
+                <strong class="text-sm">{{ reply.user.school_id }}</strong>
+            </div>
+            <small class="text-gray-500 block text-right">
+                {{ reply.created_at|date:"M d, Y h:i A" }}
+            </small>
+            <p class="text-right mt-1">{{ reply.content }}</p>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- REPLY FORM (RIGHT) -->
+    {% if request.user.is_authenticated %}
+    <div class="w-full mt-2 flex justify-end">
+        <form method="post" class="max-w-md w-full">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+            <textarea name="content"
+                      rows="2"
+                      required
+                      class="w-full border rounded p-2 text-sm"
+                      placeholder="Write a reply..."></textarea>
+            <button type="submit"
+                    class="mt-1 bg-blue-500 text-white px-3 py-1 rounded text-sm">
+                Reply
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% empty %}
+<p class="text-gray-500">No comments yet.</p>
+{% endfor %}
+
+<!-- NEW COMMENT -->
+{% if request.user.is_authenticated %}
+<form method="post" class="mt-6">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded">
+        Post Comment
+    </button>
+</form>
+{% endif %}
+
+</div>
+
+<!-- ================= RATING MODAL ================= -->
+<div id="rating-overlay">
+    <div id="rating-box">
+        <h2 class="font-semibold">Rate this note</h2>
+
+        <div id="rating-stars"
+             data-note-id="{{ note.id }}"
+             data-user-rating="{{ user_rating|default:0 }}">
+            {% for i in "12345" %}
+                <span data-value="{{ forloop.counter }}">★</span>
+            {% endfor %}
+        </div>
+
+        <p id="rating-success" style="display:none;color:green;">
+            Thank you for rating!
+        </p>
+
+        <button id="close-rating-overlay"
+                class="mt-4 px-4 py-1 border rounded">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<!-- ================= JS ================= -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* ---------- Rating Modal ---------- */
+    const openBtn = document.getElementById("open-rating-overlay");
+    const overlay = document.getElementById("rating-overlay");
+    const closeBtn = document.getElementById("close-rating-overlay");
+    const starsBox = document.getElementById("rating-stars");
+    const success = document.getElementById("rating-success");
+    const avgEl = document.getElementById("avg-rating");
+
+    if (openBtn) {
+        openBtn.onclick = () => overlay.style.display = "flex";
+    }
+    if (closeBtn) {
+        closeBtn.onclick = () => overlay.style.display = "none";
+    }
+    overlay.onclick = e => {
+        if (e.target === overlay) overlay.style.display = "none";
+    };
+
+    /* ---------- Star Logic ---------- */
+    const stars = starsBox.querySelectorAll("span");
+    let currentRating = parseInt(starsBox.dataset.userRating) || 0;
+
+    function render(val) {
+        stars.forEach(s =>
+            s.classList.toggle("active", s.dataset.value <= val)
+        );
+    }
+    render(currentRating);
+
+    function getCookie(name) {
+        return document.cookie.split("; ")
+            .find(r => r.startsWith(name + "="))?.split("=")[1];
+    }
+    const csrftoken = getCookie("csrftoken");
+
+    stars.forEach(star => {
+        const value = parseInt(star.dataset.value);
+        star.onmouseenter = () => render(value);
+        star.onmouseleave = () => render(currentRating);
+        star.onclick = () => {
+            fetch(`/notes/${starsBox.dataset.noteId}/rate/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrftoken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ value })
+            })
+            .then(r => r.json())
+            .then(d => {
+                currentRating = value;
+                avgEl.textContent = d.avg_rating;
+                success.style.display = "block";
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    location.reload();
+                }, 800);
+            });
+        };
+    });
+
+    /* ---------- Collapsible Replies ---------- */
+    document.querySelectorAll(".toggle-replies").forEach(btn => {
+        btn.onclick = () => {
+            const el = document.getElementById(btn.dataset.target);
+            const hidden = el.classList.toggle("hidden");
+            btn.textContent = hidden
+                ? btn.textContent.replace("Hide replies", "Show replies")
+                : "Hide replies";
+        };
+    });
+});
+</script>
+
+{% endblock %}

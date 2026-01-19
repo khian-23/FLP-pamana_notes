@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Pending Notes</h1>
+
+{% if page_obj.object_list %}
+<table class="min-w-full bg-white border">
+    <thead>
+        <tr class="bg-gray-200 text-left">
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Uploader</th>
+            <th class="px-4 py-2">Subject</th>
+            <th class="px-4 py-2">Uploaded At</th>
+            <th class="px-4 py-2">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for note in page_obj %}
+        <tr class="border-t" id="note-row-{{ note.pk }}">
+            <td class="px-4 py-2 font-medium">{{ note.title }}</td>
+            <td class="px-4 py-2">{{ note.uploader.get_full_name }}</td>
+            <td class="px-4 py-2">{{ note.subject.name }}</td>
+            <td class="px-4 py-2">{{ note.uploaded_at|date:"M d, Y H:i" }}</td>
+            <td class="px-4 py-2 space-x-2">
+                <button
+                    class="approve-btn bg-green-500 text-white px-3 py-1 rounded text-sm"
+                    data-id="{{ note.pk }}"
+                >
+                    Approve
+                </button>
+
+                <button
+                    class="reject-open-btn bg-red-500 text-white px-3 py-1 rounded text-sm"
+                    data-id="{{ note.pk }}"
+                >
+                    Reject
+                </button>
+
+                <a
+                    href="{% url 'notes:note_detail' note.pk %}"
+                    class="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                >
+                    View
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p>No pending notes.</p>
+{% endif %}
+
+<!-- ================= MODAL ================= -->
+<div
+    id="reject-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50"
+>
+    <div class="bg-white rounded p-4 w-full max-w-md">
+        <h2 class="text-lg font-semibold mb-2">Reject Note</h2>
+
+        <textarea
+            id="reject-reason"
+            rows="4"
+            class="w-full border rounded p-2"
+            placeholder="Enter rejection reason"
+        ></textarea>
+
+        <div class="flex justify-end gap-2 mt-3">
+            <button
+                id="cancel-reject"
+                class="px-3 py-1 rounded bg-gray-300 text-sm"
+            >
+                Cancel
+            </button>
+
+            <button
+                id="confirm-reject"
+                class="px-3 py-1 rounded bg-red-600 text-white text-sm"
+            >
+                Reject
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= TOAST ================= -->
+<div
+    id="toast"
+    class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg opacity-0 transition-opacity duration-300"
+></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let currentNoteId = null;
+
+    const modal = document.getElementById("reject-modal");
+    const reasonInput = document.getElementById("reject-reason");
+
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.remove("opacity-0");
+        toast.classList.add("opacity-100");
+
+        setTimeout(() => {
+            toast.classList.remove("opacity-100");
+            toast.classList.add("opacity-0");
+        }, 3000);
+    }
+
+    function openRejectModal(noteId) {
+        currentNoteId = noteId;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        reasonInput.value = "";
+
+        // ✅ AUTO-FOCUS
+        setTimeout(() => reasonInput.focus(), 50);
+    }
+
+    function closeRejectModal() {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        currentNoteId = null;
+    }
+
+    function sendReject() {
+        const reason = reasonInput.value.trim();
+        if (!reason) {
+            showToast("Rejection reason is required.");
+            return;
+        }
+
+        const url = "{% url 'notes:reject_note' 0 %}".replace("0", currentNoteId);
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`note-row-${currentNoteId}`).remove();
+                closeRejectModal();
+                showToast("Note rejected successfully.");
+            }
+        });
+    }
+
+    // ================= EVENTS =================
+
+    document.querySelectorAll(".approve-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const noteId = this.dataset.id;
+            const url = "{% url 'notes:approve_note' 0 %}".replace("0", noteId);
+
+            fetch(url, {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`note-row-${noteId}`).remove();
+                    showToast("Note approved successfully.");
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll(".reject-open-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            openRejectModal(this.dataset.id);
+        });
+    });
+
+    document.getElementById("cancel-reject").addEventListener("click", closeRejectModal);
+    document.getElementById("confirm-reject").addEventListener("click", sendReject);
+});
+</script>
+{% endblock %}

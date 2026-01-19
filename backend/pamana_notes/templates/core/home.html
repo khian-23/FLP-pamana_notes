@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pamana Notes - Home</title>
+</head>
+<body>
+    <h1>Welcome to Pamana Notes</h1>
+    <nav>
+        <a href="{% url 'notes:note_list' %}">View Notes</a> |
+        <a href="{% url 'notes:note_upload' %}">Upload</a>
+        <a href="{% url 'accounts:login' %}">Login</a>
+    </nav>
+</body>
+</html>

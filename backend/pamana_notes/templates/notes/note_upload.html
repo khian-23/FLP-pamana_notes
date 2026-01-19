@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Upload Note</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="mb-4">
+        <label for="id_title" class="block font-semibold">Title</label>
+        {{ form.title }}
+        {{ form.title.errors }}
+    </div>
+
+    <div class="mb-4">
+        <label for="id_description" class="block font-semibold">Description</label>
+        {{ form.description }}
+        {{ form.description.errors }}
+    </div>
+
+    <div class="mb-4">
+        <label for="id_file" class="block font-semibold">File</label>
+        {{ form.file }}
+        {{ form.file.errors }}
+    </div>
+
+    <div class="mb-4">
+        <label for="id_subject" class="block font-semibold">Subject</label>
+        {{ form.subject }}
+        {{ form.subject.errors }}
+    </div>
+
+    <div class="mb-4">
+        <label for="id_visibility" class="block font-semibold">Visibility</label>
+        {{ form.visibility }}
+        {{ form.visibility.errors }}
+        <p class="text-sm text-gray-500">For major subjects, visibility is automatically set to course-only.</p>
+    </div>
+
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Upload</button>
+</form>
+{% endblock %}
