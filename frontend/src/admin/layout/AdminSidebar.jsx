@@ -40,7 +40,7 @@ const AdminSidebar = ({ onNavigate }) => {
 
       <List sx={{ px: 1 }}>
         {navItem("/admin", "Dashboard")}
-        {navItem("/admin/pending-notes", "Pending Notes")}
+        {navItem("/admin/notes", "Pending Notes")}
         {navItem("/admin/moderated-notes", "Moderated Notes")}
         {navItem("/admin/users", "Users")}
         {navItem("/admin/reports", "Reports")}

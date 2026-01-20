@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AdminRoutes from "./admin/routes/AdminRoutes";
 
 import LoginPage from "./pages/LoginPage";
-import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -18,23 +17,15 @@ function App() {
           path="/"
           element={
             isAuthenticated()
-              ? <Navigate to="/dashboard" />
+              ? <Navigate to="/admin" />
               : <Navigate to="/login" />
           }
         />
 
+
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Student Dashboard */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
 
         {/* ✅ NEW ADMIN SYSTEM (ONLY ONE) */}
         <Route path="/admin/*" element={<AdminRoutes />} />

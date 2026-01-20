@@ -2,10 +2,11 @@
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
+from django.http import JsonResponse
 
 
 def home(request):
-    return render(request, "core/home.html")
+    return JsonResponse({"status": "backend running"})
 
 def about(request):
     return render(request, "core/about.html")  # make sure this template exists

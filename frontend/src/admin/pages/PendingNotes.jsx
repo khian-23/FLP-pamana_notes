@@ -48,7 +48,7 @@ const PendingNotes = () => {
     setProcessingId(id);
     try {
       await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
-      setNotes((prev) => prev.filter((n) => n.id !== id));
+      await loadNotes();
     } catch (err) {
       console.error("Approve failed", err);
     } finally {
@@ -72,9 +72,9 @@ const PendingNotes = () => {
         body: JSON.stringify({ reason: rejectReason }),
       });
 
-      setNotes((prev) =>
-        prev.filter((n) => n.id !== selectedNote.id)
-      );
+      await loadNotes();
+      setRejectOpen(false);
+
       setRejectOpen(false);
     } catch (err) {
       console.error("Reject failed", err);
@@ -115,7 +115,7 @@ const PendingNotes = () => {
                   <TableCell>{note.author_school_id}</TableCell>
                   <TableCell>{note.subject || "—"}</TableCell>
                   <TableCell>
-                    {new Date(note.created_at).toLocaleDateString()}
+                    {new Date(note.uploaded_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">

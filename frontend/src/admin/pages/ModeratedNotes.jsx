@@ -67,7 +67,10 @@ export default function ModeratedNotes() {
                   {note.rejection_reason || "—"}
                 </TableCell>
                 <TableCell>
-                  {new Date(note.updated_at).toLocaleDateString()}
+                  {note.uploaded_at
+                ? new Date(note.uploaded_at).toLocaleDateString()
+                : "—"}
+
                 </TableCell>
               </TableRow>
             ))}

@@ -1,5 +1,4 @@
 import { jwtDecode } from "jwt-decode";
-
 const API_BASE = "http://127.0.0.1:8000";
 
 export function getAccessToken() {
@@ -47,15 +46,20 @@ export function isAuthenticated() {
 export function isAdmin() {
   const token = getAccessToken();
   if (!token) return false;
-  return Boolean(jwtDecode(token)?.is_staff);
+
+  try {
+    return Boolean(jwtDecode(token)?.is_staff);
+  } catch {
+    return false;
+  }
 }
 
 export async function refreshAccessToken() {
-  const refresh = localStorage.getItem("refresh");
+  const refresh = getRefreshToken();
   if (!refresh) return false;
 
   const response = await fetch(
-    "http://127.0.0.1:8000/api/auth/token/refresh/",
+    `${API_BASE}/accounts/api/auth/token/refresh/`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,11 +68,12 @@ export async function refreshAccessToken() {
   );
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || response.statusText);
+    logout();
+    return false;
   }
 
   const data = await response.json();
   localStorage.setItem("access", data.access);
   return true;
 }
+

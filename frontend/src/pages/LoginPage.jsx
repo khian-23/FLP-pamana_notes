@@ -12,7 +12,7 @@ export default function LoginPage() {
 
     try {
       await login(schoolId, password);
-      navigate("/dashboard");
+      navigate("/admin");
     } catch (err) {
       alert("Invalid credentials");
     }
