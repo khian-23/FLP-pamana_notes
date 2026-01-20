@@ -6,7 +6,6 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import PendingIcon from "@mui/icons-material/Pending";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
-
 import {
   ResponsiveContainer,
   LineChart,
@@ -32,7 +31,7 @@ const StatCard = ({ title, value, icon }) => (
         </Typography>
         <Typography variant="h5">{value}</Typography>
       </Box>
-      <Box sx={{ bgcolor: "grey.100", p: 1, borderRadius: 1 }}>
+      <Box sx={{ bgcolor: "green.100", p: 1, borderRadius: 1 }}>
         {icon}
       </Box>
     </Box>
@@ -87,22 +86,36 @@ const Dashboard = () => {
       </Box>
 
       {/* UPLOAD TREND */}
-      <Paper sx={{ mt: 4, p: 2 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          Notes Upload Trend
-        </Typography>
+        <Paper sx={{ mt: 4, p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Notes Upload Trend
+          </Typography>
 
-        <Box sx={{ width: "100%", height: 260 }}>
-          <ResponsiveContainer>
-            <LineChart data={uploads}>
-              <XAxis dataKey="day" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Line dataKey="notes" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Box>
-      </Paper>
+          {uploads.length > 0 && (
+            <Box
+              sx={{
+                width: "100%",
+                height: 320,
+                position: "relative",
+              }}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={uploads}>
+                  <XAxis dataKey="day" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Line
+                    dataKey="notes"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Box>
+          )}
+        </Paper>
+
+
 
       {/* UPLOADS BY SUBJECT */}
       <Paper sx={{ mt: 4, p: 2 }}>
