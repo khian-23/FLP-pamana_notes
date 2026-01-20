@@ -33,6 +33,8 @@ export async function login(school_id, password) {
 
   const data = await res.json();
   setTokens(data);
+
+  return data; // 🔴 THIS WAS MISSING
 }
 
 export function isAuthenticated() {
@@ -62,14 +64,11 @@ export async function refreshAccessToken() {
   const refresh = getRefreshToken();
   if (!refresh) return false;
 
-  const res = await fetch(
-    `${API_BASE}/accounts/api/auth/token/refresh/`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
-    }
-  );
+  const res = await fetch(`${API_BASE}/accounts/api/auth/token/refresh/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh }),
+  });
 
   if (!res.ok) {
     logout();

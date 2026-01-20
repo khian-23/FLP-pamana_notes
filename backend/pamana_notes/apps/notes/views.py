@@ -431,3 +431,4 @@ def my_notes(request):
     return render(request, "notes/my_notes.html", {
         "notes": notes
     })
+

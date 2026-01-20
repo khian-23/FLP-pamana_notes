@@ -1,14 +1,14 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { isAuthenticated, isAdmin } from "../services/auth";
 
-export default function AdminGuard() {
+export default function AdminGuard({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin()) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
-  return <Outlet />;
+  return children;
 }

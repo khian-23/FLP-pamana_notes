@@ -1,46 +1,63 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
 import AdminLayout from "./admin/layout/AdminLayout";
-import Dashboard from "./admin/pages/Dashboard";
-import PendingNotes from "./admin/pages/PendingNotes";
-import Users from "./admin/pages/Users";
-import ModeratedNotes from "./admin/pages/ModeratedNotes";
-
 import AdminGuard from "./components/AdminGuard";
-import { isAuthenticated } from "./services/auth";
+
+import StudentLayout from "./app/layout/StudentLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+import Home from "./app/pages/Home";
+import MyNotes from "./app/pages/MyNotes";
+import UploadNote from "./app/pages/UploadNote";
+import Bookmarks from "./app/pages/Bookmarks";
+import FreedomWall from "./app/pages/FreedomWall";
+import Profile from "./app/pages/Profile";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ROOT */}
+
+        {/* PUBLIC */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* STUDENT */}
+          <Route
+            path="/app/*"
+            element={
+              <ProtectedRoute>
+                <StudentLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Home />} />
+            <Route path="my-notes" element={<MyNotes />} />
+            <Route path="upload" element={<UploadNote />} />
+            <Route path="bookmarks" element={<Bookmarks />} />
+            <Route path="freedom-wall" element={<FreedomWall />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+
+
+
+        {/* ADMIN */}
         <Route
-          path="/"
+          path="/admin/*"
           element={
-            isAuthenticated()
-              ? <Navigate to="/admin" replace />
-              : <Navigate to="/login" replace />
+            <AdminGuard>
+              <AdminLayout />
+            </AdminGuard>
           }
         />
 
-        {/* PUBLIC */}
-        <Route path="/login" element={<LoginPage />} />
-
-        {/* PROTECTED ADMIN */}
-        <Route element={<AdminGuard />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="notes" element={<PendingNotes />} />
-            <Route path="moderated-notes" element={<ModeratedNotes />} />
-            <Route path="users" element={<Users />} />
-          </Route>
-        </Route>
-
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
+
       </Routes>
     </BrowserRouter>
   );
