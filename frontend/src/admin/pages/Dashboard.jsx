@@ -14,6 +14,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  BarChart,
+  Bar,
 } from "recharts";
 
 import { fetchDashboardStats } from "../../services/adminApi";
@@ -43,12 +45,14 @@ const StatCard = ({ title, value, icon }) => (
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [uploads, setUploads] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
   useEffect(() => {
     fetchDashboardStats()
       .then((data) => {
         setStats(data.stats);
         setUploads(data.uploads_per_day);
+        setSubjects(data.uploads_by_subject);
       })
       .catch(console.error);
   }, []);
@@ -82,21 +86,38 @@ const Dashboard = () => {
         <StatCard title="Rejected Notes" value={stats.rejected_notes} icon={<CancelIcon />} />
       </Box>
 
-      {/* CHART */}
+      {/* UPLOAD TREND */}
       <Paper sx={{ mt: 4, p: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
           Notes Upload Trend
         </Typography>
 
-        {/* IMPORTANT: non-flex wrapper with minHeight */}
-        <Box sx={{ width: "100%", minHeight: 260 }}>
-          <ResponsiveContainer width="100%" aspect={2.5}>
+        <Box sx={{ width: "100%", height: 260 }}>
+          <ResponsiveContainer>
             <LineChart data={uploads}>
               <XAxis dataKey="day" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Line dataKey="notes" strokeWidth={2} />
             </LineChart>
+          </ResponsiveContainer>
+        </Box>
+      </Paper>
+
+      {/* UPLOADS BY SUBJECT */}
+      <Paper sx={{ mt: 4, p: 2 }}>
+        <Typography variant="subtitle1" gutterBottom>
+          Uploads by Subject
+        </Typography>
+
+        <Box sx={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <BarChart data={subjects}>
+              <XAxis dataKey="subject" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="notes" />
+            </BarChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
