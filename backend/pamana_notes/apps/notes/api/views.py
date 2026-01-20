@@ -24,7 +24,11 @@ class PendingNotesAPIView(APIView):
             is_deleted=False,
         ).order_by("-uploaded_at")
 
-        serializer = AdminNoteSerializer(notes, many=True)
+        serializer = AdminNoteSerializer(
+            notes,
+            many=True,
+            context={"request": request},
+)
         return Response(serializer.data)
 
 
@@ -37,7 +41,11 @@ class ModeratedNotesAPIView(APIView):
             | Note.objects.filter(is_deleted=False, is_rejected=True)
         ).order_by("-uploaded_at")
 
-        serializer = AdminNoteSerializer(notes, many=True)
+        serializer = AdminNoteSerializer(
+            notes,
+            many=True,
+            context={"request": request},
+)
         return Response(serializer.data)
 
 

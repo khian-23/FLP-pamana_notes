@@ -36,7 +36,8 @@ class Note(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     content = models.TextField(blank=True)
-    file = models.FileField(upload_to="notes/", blank=True, null=True)
+    file = models.FileField(upload_to="files/", blank=True, null=True)
+
 
     uploader = models.ForeignKey(
         settings.AUTH_USER_MODEL,
