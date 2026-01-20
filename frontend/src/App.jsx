@@ -1,17 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import AdminRoutes from "./admin/routes/AdminRoutes";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
-import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./admin/layout/AdminLayout";
+import Dashboard from "./admin/pages/Dashboard";
+import PendingNotes from "./admin/pages/PendingNotes";
+import Users from "./admin/pages/Users";
+import ModeratedNotes from "./admin/pages/ModeratedNotes";
+
+import AdminGuard from "./components/AdminGuard";
 import { isAuthenticated } from "./services/auth";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* ROOT */}
         <Route
           path="/"
@@ -25,19 +29,18 @@ function App() {
         {/* PUBLIC */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ADMIN (PROTECTED) */}
-        <Route
-          path="/admin/*"
-          element={
-            <AdminRoute>
-              <AdminRoutes />
-            </AdminRoute>
-          }
-        />
+        {/* PROTECTED ADMIN */}
+        <Route element={<AdminGuard />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="notes" element={<PendingNotes />} />
+            <Route path="moderated-notes" element={<ModeratedNotes />} />
+            <Route path="users" element={<Users />} />
+          </Route>
+        </Route>
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
-
       </Routes>
     </BrowserRouter>
   );

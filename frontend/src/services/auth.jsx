@@ -1,6 +1,8 @@
 import { jwtDecode } from "jwt-decode";
+
 const API_BASE = "http://127.0.0.1:8000";
 
+/* TOKENS */
 export function getAccessToken() {
   return localStorage.getItem("access");
 }
@@ -19,6 +21,7 @@ export function logout() {
   localStorage.removeItem("refresh");
 }
 
+/* AUTH */
 export async function login(school_id, password) {
   const res = await fetch(`${API_BASE}/accounts/api/auth/token/`, {
     method: "POST",
@@ -35,6 +38,7 @@ export async function login(school_id, password) {
 export function isAuthenticated() {
   const token = getAccessToken();
   if (!token) return false;
+
   try {
     const { exp } = jwtDecode(token);
     return Date.now() < exp * 1000;
@@ -58,7 +62,7 @@ export async function refreshAccessToken() {
   const refresh = getRefreshToken();
   if (!refresh) return false;
 
-  const response = await fetch(
+  const res = await fetch(
     `${API_BASE}/accounts/api/auth/token/refresh/`,
     {
       method: "POST",
@@ -67,13 +71,12 @@ export async function refreshAccessToken() {
     }
   );
 
-  if (!response.ok) {
+  if (!res.ok) {
     logout();
     return false;
   }
 
-  const data = await response.json();
+  const data = await res.json();
   localStorage.setItem("access", data.access);
   return true;
 }
-

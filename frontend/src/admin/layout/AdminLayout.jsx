@@ -1,33 +1,24 @@
 import { useState } from "react";
-import {
-  Box,
-  Drawer,
-  useMediaQuery,
-} from "@mui/material";
+import { Box, Drawer, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { Outlet } from "react-router-dom";
 
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
 
 const drawerWidth = 240;
 
-const AdminLayout = ({ children }) => {
+export default function AdminLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleDrawer = () => {
-    setMobileOpen((prev) => !prev);
+    setMobileOpen(prev => !prev);
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",       // ✅ ROW layout
-        minHeight: "100vh",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       {/* SIDEBAR */}
       {isMobile ? (
         <Drawer
@@ -35,11 +26,7 @@ const AdminLayout = ({ children }) => {
           open={mobileOpen}
           onClose={toggleDrawer}
           ModalProps={{ keepMounted: true }}
-          sx={{
-            "& .MuiDrawer-paper": {
-              width: drawerWidth,
-            },
-          }}
+          sx={{ "& .MuiDrawer-paper": { width: drawerWidth } }}
         >
           <AdminSidebar onNavigate={toggleDrawer} />
         </Drawer>
@@ -58,21 +45,10 @@ const AdminLayout = ({ children }) => {
         </Drawer>
       )}
 
-      {/* MAIN CONTENT */}
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column", // ✅ column ONLY here
-          minHeight: "100vh",
-        }}
-      >
-        <AdminTopbar
-          isMobile={isMobile}
-          onMenuClick={toggleDrawer}
-        />
+      {/* MAIN */}
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <AdminTopbar isMobile={isMobile} onMenuClick={toggleDrawer} />
 
-        {/* CONTENT AREA */}
         <Box
           sx={{
             flexGrow: 1,
@@ -80,11 +56,10 @@ const AdminLayout = ({ children }) => {
             backgroundColor: "#f9fafb",
           }}
         >
-          {children}
+          {/* 👇 THIS FIXES THE BLANK PAGE */}
+          <Outlet />
         </Box>
       </Box>
     </Box>
   );
-};
-
-export default AdminLayout;
+}
