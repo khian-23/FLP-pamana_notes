@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from apps.notes.models import Note
+from apps.notes.models import NoteAction
 
 
 class AdminNoteSerializer(serializers.ModelSerializer):
@@ -16,16 +17,17 @@ class AdminNoteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Note
-        fields = (
+        fields = [
             "id",
             "title",
             "author_school_id",
             "subject",
             "status",
+            "file",
             "uploaded_at",
             "rejection_reason",
-            "file",
-        )
+            "actions",
+        ]
 
     def get_status(self, obj):
         if obj.is_approved:
@@ -42,3 +44,9 @@ class AdminNoteSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.file.url)
         return obj.file.url
 
+class NoteActionSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source="actor.school_id", default=None)
+
+    class Meta:
+        model = NoteAction
+        fields = ["action", "actor", "reason", "created_at"]

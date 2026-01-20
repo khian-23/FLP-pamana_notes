@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import AdminRoutes from "./admin/routes/AdminRoutes";
 
+import AdminRoutes from "./admin/routes/AdminRoutes";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
-import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import { isAuthenticated } from "./services/auth";
 
 function App() {
@@ -12,23 +12,28 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Root */}
+        {/* ROOT */}
         <Route
           path="/"
           element={
             isAuthenticated()
-              ? <Navigate to="/admin" />
-              : <Navigate to="/login" />
+              ? <Navigate to="/admin" replace />
+              : <Navigate to="/login" replace />
           }
         />
 
-
-        {/* Public */}
+        {/* PUBLIC */}
         <Route path="/login" element={<LoginPage />} />
 
-
-        {/* ✅ NEW ADMIN SYSTEM (ONLY ONE) */}
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        {/* ADMIN (PROTECTED) */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <AdminRoutes />
+            </AdminRoute>
+          }
+        />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
