@@ -24,17 +24,19 @@ const PendingNotes = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
-  // Reject dialog state
+  // preview
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedNote, setSelectedNote] = useState(null);
+
+  // reject dialog
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [selectedNote, setSelectedNote] = useState(null);
 
   const loadNotes = async () => {
     try {
       const data = await apiFetch("/notes/api/pending/");
       setNotes(data);
-    } catch (err) {
-      console.error("Failed to load pending notes", err);
     } finally {
       setLoading(false);
     }
@@ -46,14 +48,10 @@ const PendingNotes = () => {
 
   const approveNote = async (id) => {
     setProcessingId(id);
-    try {
-      await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
-      await loadNotes();
-    } catch (err) {
-      console.error("Approve failed", err);
-    } finally {
-      setProcessingId(null);
-    }
+    await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
+    setPreviewOpen(false);
+    loadNotes();
+    setProcessingId(null);
   };
 
   const openRejectDialog = (note) => {
@@ -66,21 +64,15 @@ const PendingNotes = () => {
     if (!rejectReason.trim()) return;
 
     setProcessingId(selectedNote.id);
-    try {
-      await apiFetch(`/notes/api/reject/${selectedNote.id}/`, {
-        method: "POST",
-        body: JSON.stringify({ reason: rejectReason }),
-      });
+    await apiFetch(`/notes/api/reject/${selectedNote.id}/`, {
+      method: "POST",
+      body: JSON.stringify({ reason: rejectReason }),
+    });
 
-      await loadNotes();
-      setRejectOpen(false);
-
-      setRejectOpen(false);
-    } catch (err) {
-      console.error("Reject failed", err);
-    } finally {
-      setProcessingId(null);
-    }
+    setRejectOpen(false);
+    setPreviewOpen(false);
+    loadNotes();
+    setProcessingId(null);
   };
 
   return (
@@ -117,12 +109,25 @@ const PendingNotes = () => {
                   <TableCell>
                     {new Date(note.uploaded_at).toLocaleDateString()}
                   </TableCell>
+
                   <TableCell align="right">
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Stack direction="row" spacing={1}>
                       <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          setSelectedNote(note);
+                          setPreviewUrl(note.file);
+                          setPreviewOpen(true);
+                        }}
+                      >
+                        View
+                      </Button>
+
+                      <Button
+                        size="small"
                         variant="contained"
                         color="success"
-                        size="small"
                         disabled={processingId === note.id}
                         onClick={() => approveNote(note.id)}
                       >
@@ -130,10 +135,9 @@ const PendingNotes = () => {
                       </Button>
 
                       <Button
+                        size="small"
                         variant="contained"
                         color="error"
-                        size="small"
-                        disabled={processingId === note.id}
                         onClick={() => openRejectDialog(note)}
                       >
                         Reject
@@ -147,16 +151,63 @@ const PendingNotes = () => {
         </TableContainer>
       )}
 
-      {/* Reject Dialog */}
+      {/* PREVIEW DIALOG */}
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Note Preview</DialogTitle>
+
+        <DialogContent dividers>
+          {previewUrl?.endsWith(".pdf") ? (
+            <iframe
+              src={previewUrl}
+              width="100%"
+              height="600"
+              title="PDF Preview"
+            />
+          ) : /\.(png|jpe?g|webp)$/i.test(previewUrl || "") ? (
+            <img src={previewUrl} style={{ width: "100%" }} />
+          ) : (
+            <Typography>
+              Preview not available.
+              <br /><br />
+              <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                Download file
+              </a>
+            </Typography>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            color="success"
+            variant="contained"
+            onClick={() => approveNote(selectedNote.id)}
+          >
+            Approve
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => openRejectDialog(selectedNote)}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* REJECT DIALOG */}
       <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)} fullWidth>
         <DialogTitle>Reject Note</DialogTitle>
         <DialogContent>
           <TextField
-            autoFocus
             fullWidth
             multiline
             minRows={3}
-            label="Reason for rejection"
+            label="Reason"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
           />
@@ -164,10 +215,10 @@ const PendingNotes = () => {
         <DialogActions>
           <Button onClick={() => setRejectOpen(false)}>Cancel</Button>
           <Button
-            onClick={rejectNote}
-            color="error"
             variant="contained"
+            color="error"
             disabled={!rejectReason.trim()}
+            onClick={rejectNote}
           >
             Reject
           </Button>
