@@ -4,6 +4,7 @@ from .views import (
     ModeratedNotesAPIView,
     AdminDashboardAPIView,
     approve_note,
+    bulk_reject_notes,
     reject_note,
 )
 
@@ -13,4 +14,6 @@ urlpatterns = [
     path("dashboard/", AdminDashboardAPIView.as_view(), name="dashboard-api"),
     path("approve/<int:pk>/", approve_note, name="approve-note"),
     path("reject/<int:pk>/", reject_note, name="reject-note"),
+    path("bulk-reject/", bulk_reject_notes, name="bulk-reject"),
+
 ]

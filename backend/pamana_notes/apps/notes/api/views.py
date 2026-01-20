@@ -155,3 +155,19 @@ class AdminDashboardAPIView(APIView):
             "uploads_per_day": uploads_per_day,
             "uploads_by_subject": uploads_by_subject,
         })
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def bulk_reject_notes(request):
+    ids = request.data.get("ids", [])
+    reason = request.data.get("reason", "Rejected by admin")
+
+    notes = Note.objects.filter(id__in=ids)
+
+    for note in notes:
+        note.is_approved = False
+        note.is_rejected = True
+        note.rejection_reason = reason
+        note.save()
+
+    return Response({"rejected": notes.count()})

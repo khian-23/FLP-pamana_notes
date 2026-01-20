@@ -90,6 +90,21 @@ export default function PendingNotes() {
     setProcessingId(null);
     await loadNotes();
   };
+  const bulkReject = async () => {
+    if (!rejectReason.trim()) return;
+
+    await apiFetch("/notes/api/bulk-reject/", {
+      method: "POST",
+      body: JSON.stringify({
+        ids: selectedIds,
+        reason: rejectReason,
+      }),
+    });
+
+    setRejectOpen(false);
+    await loadNotes();
+  };
+
 
   /* =========================
      UI
@@ -193,13 +208,13 @@ export default function PendingNotes() {
                       </Button>
 
                       <Button
-                        size="small"
                         variant="contained"
                         color="error"
-                        onClick={() => openReject(note)}
+                        onClick={selectedIds.length ? bulkReject : rejectNote}
                       >
                         Reject
                       </Button>
+
                     </Stack>
                   </TableCell>
                 </TableRow>
