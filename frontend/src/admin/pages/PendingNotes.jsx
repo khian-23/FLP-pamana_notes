@@ -15,28 +15,36 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Checkbox,
 } from "@mui/material";
 
 import { apiFetch } from "../../services/api";
 
-const PendingNotes = () => {
+export default function PendingNotes() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
-  // preview
+  const [selectedIds, setSelectedIds] = useState([]);
+
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [selectedNote, setSelectedNote] = useState(null);
 
-  // reject dialog
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  /* =========================
+     LOAD
+  ========================= */
   const loadNotes = async () => {
+    setLoading(true);
     try {
       const data = await apiFetch("/notes/api/pending/");
       setNotes(data);
+      setSelectedIds([]);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -46,15 +54,24 @@ const PendingNotes = () => {
     loadNotes();
   }, []);
 
+  /* =========================
+     ACTIONS
+  ========================= */
   const approveNote = async (id) => {
     setProcessingId(id);
     await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
-    setPreviewOpen(false);
-    loadNotes();
+    await loadNotes();
     setProcessingId(null);
   };
 
-  const openRejectDialog = (note) => {
+  const bulkApprove = async () => {
+    for (const id of selectedIds) {
+      await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
+    }
+    await loadNotes();
+  };
+
+  const openReject = (note) => {
     setSelectedNote(note);
     setRejectReason("");
     setRejectOpen(true);
@@ -70,16 +87,30 @@ const PendingNotes = () => {
     });
 
     setRejectOpen(false);
-    setPreviewOpen(false);
-    loadNotes();
     setProcessingId(null);
+    await loadNotes();
   };
 
+  /* =========================
+     UI
+  ========================= */
   return (
     <Paper sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
         Pending Notes
       </Typography>
+
+      {selectedIds.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={bulkApprove}
+          >
+            Approve Selected ({selectedIds.length})
+          </Button>
+        </Stack>
+      )}
 
       {loading && <Typography>Loading...</Typography>}
 
@@ -92,6 +123,20 @@ const PendingNotes = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedIds.length === notes.length}
+                    indeterminate={
+                      selectedIds.length > 0 &&
+                      selectedIds.length < notes.length
+                    }
+                    onChange={(e) =>
+                      setSelectedIds(
+                        e.target.checked ? notes.map(n => n.id) : []
+                      )
+                    }
+                  />
+                </TableCell>
                 <TableCell>Title</TableCell>
                 <TableCell>Uploader</TableCell>
                 <TableCell>Subject</TableCell>
@@ -101,8 +146,21 @@ const PendingNotes = () => {
             </TableHead>
 
             <TableBody>
-              {notes.map((note) => (
+              {notes.map(note => (
                 <TableRow key={note.id}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedIds.includes(note.id)}
+                      onChange={() =>
+                        setSelectedIds(prev =>
+                          prev.includes(note.id)
+                            ? prev.filter(id => id !== note.id)
+                            : [...prev, note.id]
+                        )
+                      }
+                    />
+                  </TableCell>
+
                   <TableCell>{note.title}</TableCell>
                   <TableCell>{note.author_school_id}</TableCell>
                   <TableCell>{note.subject || "—"}</TableCell>
@@ -138,7 +196,7 @@ const PendingNotes = () => {
                         size="small"
                         variant="contained"
                         color="error"
-                        onClick={() => openRejectDialog(note)}
+                        onClick={() => openReject(note)}
                       >
                         Reject
                       </Button>
@@ -151,7 +209,7 @@ const PendingNotes = () => {
         </TableContainer>
       )}
 
-      {/* PREVIEW DIALOG */}
+      {/* PREVIEW */}
       <Dialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -159,47 +217,29 @@ const PendingNotes = () => {
         fullWidth
       >
         <DialogTitle>Note Preview</DialogTitle>
-
         <DialogContent dividers>
           {previewUrl?.endsWith(".pdf") ? (
             <iframe
               src={previewUrl}
               width="100%"
               height="600"
-              title="PDF Preview"
+              title="PDF"
             />
-          ) : /\.(png|jpe?g|webp)$/i.test(previewUrl || "") ? (
+          ) : /\.(png|jpe?g|webp)$/i.test(previewUrl) ? (
             <img src={previewUrl} style={{ width: "100%" }} />
           ) : (
             <Typography>
               Preview not available.
-              <br /><br />
-              <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+              <br />
+              <a href={previewUrl} target="_blank" rel="noreferrer">
                 Download file
               </a>
             </Typography>
           )}
         </DialogContent>
-
-        <DialogActions>
-          <Button
-            color="success"
-            variant="contained"
-            onClick={() => approveNote(selectedNote.id)}
-          >
-            Approve
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={() => openRejectDialog(selectedNote)}
-          >
-            Reject
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* REJECT DIALOG */}
+      {/* REJECT */}
       <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)} fullWidth>
         <DialogTitle>Reject Note</DialogTitle>
         <DialogContent>
@@ -217,7 +257,6 @@ const PendingNotes = () => {
           <Button
             variant="contained"
             color="error"
-            disabled={!rejectReason.trim()}
             onClick={rejectNote}
           >
             Reject
@@ -226,6 +265,4 @@ const PendingNotes = () => {
       </Dialog>
     </Paper>
   );
-};
-
-export default PendingNotes;
+}
