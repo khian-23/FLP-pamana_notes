@@ -18,6 +18,8 @@ urlpatterns = [
     # API
     path("api/auth/token/refresh/", TokenRefreshView.as_view()),
     path("api/subjects/", include("apps.subjects.api.urls")),  # ✅ CORRECT
+    path("api/accounts/", include("apps.accounts.api.urls")),
+
 ]
 
 if settings.DEBUG:
