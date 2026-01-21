@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
+import NoteDetail from "./pages/NoteDetail";
 
 import AdminLayout from "./admin/layout/AdminLayout";
 import AdminGuard from "./components/AdminGuard";
@@ -24,27 +25,25 @@ function App() {
 
         {/* PUBLIC */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* STUDENT */}
-          <Route
-            path="/app/*"
-            element={
-              <ProtectedRoute>
-                <StudentLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Home />} />
-            <Route path="my-notes" element={<MyNotes />} />
-            <Route path="upload" element={<UploadNote />} />
-            <Route path="bookmarks" element={<Bookmarks />} />
-            <Route path="freedom-wall" element={<FreedomWall />} />
-            <Route path="profile" element={<Profile />} />
-          </Route>
-
-
+        {/* STUDENT (PROTECTED) */}
+        <Route
+          path="/app/*"
+          element={
+            <ProtectedRoute>
+              <StudentLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Home />} />
+          <Route path="notes/:id" element={<NoteDetail />} />
+          <Route path="my-notes" element={<MyNotes />} />
+          <Route path="upload" element={<UploadNote />} />
+          <Route path="bookmarks" element={<Bookmarks />} />
+          <Route path="freedom-wall" element={<FreedomWall />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
 
         {/* ADMIN */}
         <Route

@@ -58,6 +58,14 @@ const Home = () => {
     );
   }, [search, notes]);
 
+  const handleViewDetails = (id) => {
+    if (!token) {
+      navigate("/login");
+    } else {
+      navigate(`/app/notes/${id}`);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
@@ -104,11 +112,7 @@ const Home = () => {
                 <Button
                   size="small"
                   sx={{ mt: 1 }}
-                  onClick={() =>
-                    token
-                      ? window.open(note.file, "_blank")
-                      : navigate("/login")
-                  }
+                  onClick={() => handleViewDetails(note.id)}
                 >
                   View Details
                 </Button>

@@ -13,6 +13,7 @@ from .student_my_notes import StudentMyNotesAPIView
 from .student_upload import StudentUploadNoteAPIView
 from .subjects_list import SubjectListAPIView
 from .public_notes import PublicNotesAPIView
+from .note_detail import NoteDetailAPIView
 
 from .student_dashboard import StudentDashboardAPIView  # ✅ ADD THIS
 
@@ -25,7 +26,9 @@ urlpatterns = [
     path("public/", PublicNotesAPIView.as_view()),
 
     # STUDENT
-    path("student/dashboard/", StudentDashboardAPIView.as_view()),  # ✅ ADD THIS
+    path("student/dashboard/", StudentDashboardAPIView.as_view()),
+    path("notes/<int:pk>/", NoteDetailAPIView.as_view(), name="note-detail"),
+  # ✅ ADD THIS
 
     # ADMIN
     path("pending/", PendingNotesAPIView.as_view(), name="pending-notes"),

@@ -25,14 +25,10 @@ class PublicSubjectListAPIView(APIView):
                         notes__visibility="public",
                         notes__is_approved=True,
                         notes__is_deleted=False,
-                    ),
+                    )
                 )
             )
-            .values(
-                "id",
-                "name",
-                "public_notes_count",
-            )
+            .values("id", "name", "public_notes_count")
             .order_by("name")
         )
 
