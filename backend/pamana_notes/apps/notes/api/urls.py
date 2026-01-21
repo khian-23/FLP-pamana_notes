@@ -12,6 +12,7 @@ from .views import (
 from .student_my_notes import StudentMyNotesAPIView
 from .student_upload import StudentUploadNoteAPIView
 from .subjects_list import SubjectListAPIView
+from .public_notes import PublicNotesAPIView
 
 from .student_dashboard import StudentDashboardAPIView  # ✅ ADD THIS
 
@@ -21,6 +22,7 @@ urlpatterns = [
     path("student/my-notes/", StudentMyNotesAPIView.as_view()),
     path("student/upload/", StudentUploadNoteAPIView.as_view()),
     path("", SubjectListAPIView.as_view()),
+    path("public/", PublicNotesAPIView.as_view()),
 
     # STUDENT
     path("student/dashboard/", StudentDashboardAPIView.as_view()),  # ✅ ADD THIS

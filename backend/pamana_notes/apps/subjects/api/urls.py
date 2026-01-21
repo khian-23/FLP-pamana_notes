@@ -1,6 +1,6 @@
 from django.urls import path
-from .subjects_list import SubjectListAPIView
+from .views import PublicSubjectListAPIView
 
 urlpatterns = [
-    path("", SubjectListAPIView.as_view()),
+    path("public/", PublicSubjectListAPIView.as_view(), name="public-subjects"),
 ]

@@ -6,11 +6,18 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # Core / pages
     path("", include("apps.core.urls")),
+    path("subjects/", include("apps.subjects.urls")),
+
+    # Accounts & Notes
     path("accounts/", include("apps.accounts.urls")),
     path("notes/", include("apps.notes.urls")),
+
+    # API
     path("api/auth/token/refresh/", TokenRefreshView.as_view()),
-    path("", include("apps.subjects.urls")),
+    path("api/subjects/", include("apps.subjects.api.urls")),  # ✅ CORRECT
 ]
 
 if settings.DEBUG:

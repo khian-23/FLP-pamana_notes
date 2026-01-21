@@ -90,13 +90,17 @@ export default function LandingPage() {
                     px: 4,
                     borderRadius: 999,
                     "&:hover": {
-                      bgcolor: "#e8f5e9"
-                    }
+                      bgcolor: "#e8f5e9",
+                    },
                   }}
-                  onClick={() => navigate("/login")}
+                  onClick={() => {
+                    const token = localStorage.getItem("access");
+                    navigate(token ? "/app/home" : "/home");
+                  }}
                 >
                   Get Started
                 </Button>
+
 
                 <Button
                   size="large"

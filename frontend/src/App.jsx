@@ -24,6 +24,7 @@ function App() {
 
         {/* PUBLIC */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* STUDENT */}
