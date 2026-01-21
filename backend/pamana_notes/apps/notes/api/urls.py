@@ -1,5 +1,14 @@
 from django.urls import path
 
+# dashboards / views
+from .student_dashboard import StudentDashboardAPIView
+from .student_my_notes import StudentMyNotesAPIView
+from .student_upload import StudentUploadNoteAPIView
+from .subjects_list import SubjectListAPIView
+from .public_notes import PublicNotesAPIView
+from .note_detail import NoteDetailAPIView
+
+# admin
 from .views import (
     PendingNotesAPIView,
     ModeratedNotesAPIView,
@@ -7,30 +16,37 @@ from .views import (
     approve_note,
     bulk_reject_notes,
     reject_note,
-    public_notes_api,
 )
-from .student_my_notes import StudentMyNotesAPIView
-from .student_upload import StudentUploadNoteAPIView
-from .subjects_list import SubjectListAPIView
-from .public_notes import PublicNotesAPIView
-from .note_detail import NoteDetailAPIView
 
-from .student_dashboard import StudentDashboardAPIView  # ✅ ADD THIS
+# actions
+from .note_actions import (
+    ToggleLikeAPIView,
+    ToggleSaveAPIView,
+    CommentAPIView,
+)
 
 urlpatterns = [
+    # =======================
     # PUBLIC
-    path("public/", public_notes_api),
+    # =======================
+    path("public/", PublicNotesAPIView.as_view()),
+    path("subjects/", SubjectListAPIView.as_view()),
+
+    # =======================
+    # STUDENT
+    # =======================
+    path("student/dashboard/", StudentDashboardAPIView.as_view()),
     path("student/my-notes/", StudentMyNotesAPIView.as_view()),
     path("student/upload/", StudentUploadNoteAPIView.as_view()),
-    path("", SubjectListAPIView.as_view()),
-    path("public/", PublicNotesAPIView.as_view()),
 
-    # STUDENT
-    path("student/dashboard/", StudentDashboardAPIView.as_view()),
     path("notes/<int:pk>/", NoteDetailAPIView.as_view(), name="note-detail"),
-  # ✅ ADD THIS
+    path("notes/<int:pk>/like/", ToggleLikeAPIView.as_view()),
+    path("notes/<int:pk>/save/", ToggleSaveAPIView.as_view()),
+    path("notes/<int:pk>/comments/", CommentAPIView.as_view()),
 
+    # =======================
     # ADMIN
+    # =======================
     path("pending/", PendingNotesAPIView.as_view(), name="pending-notes"),
     path("moderated/", ModeratedNotesAPIView.as_view(), name="moderated-notes"),
     path("dashboard/", AdminDashboardAPIView.as_view(), name="dashboard-api"),

@@ -216,3 +216,34 @@ class NoteAction(models.Model):
 
     def __str__(self):
         return f"{self.note.title} - {self.action}"
+
+class NoteLike(models.Model):
+    note = models.ForeignKey(
+        "Note",
+        on_delete=models.CASCADE,
+        related_name="likes"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("note", "user")
+
+
+class NoteSave(models.Model):
+    note = models.ForeignKey(
+        "Note",
+        on_delete=models.CASCADE,
+        related_name="saves"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("note", "user")

@@ -1,4 +1,3 @@
-# apps/accounts/models.py
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.conf import settings
@@ -15,8 +14,21 @@ class CustomUserManager(BaseUserManager):
     def create_user(self, school_id, email=None, password=None, **extra_fields):
         if not school_id:
             raise ValueError("The School ID must be set")
+        if not email:
+            raise ValueError("Email must be set")
+        if not extra_fields.get("first_name"):
+            raise ValueError("First name must be set")
+        if not extra_fields.get("last_name"):
+            raise ValueError("Last name must be set")
+        if not extra_fields.get("course"):
+            raise ValueError("Course must be set")
+
         email = self.normalize_email(email)
-        user = self.model(school_id=school_id, email=email, **extra_fields)
+        user = self.model(
+            school_id=school_id,
+            email=email,
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -24,27 +36,32 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, school_id, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
+
         return self.create_user(school_id, email, password, **extra_fields)
 
 
 class CustomUser(AbstractUser):
-    school_id = models.CharField(max_length=20, unique=True)
     username = None
+    school_id = models.CharField(max_length=20, unique=True)
+
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
 
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True,        # ✅ REQUIRED with SET_NULL
+        blank=False,
         related_name="students"
     )
 
     USERNAME_FIELD = "school_id"
-    REQUIRED_FIELDS = ["email"]
+    REQUIRED_FIELDS = ["email", "first_name", "last_name", "course"]
 
     saved_notes = models.ManyToManyField(
         "notes.Note",
@@ -53,7 +70,6 @@ class CustomUser(AbstractUser):
     )
 
     objects = CustomUserManager()
-
 
     def __str__(self):
         return self.school_id

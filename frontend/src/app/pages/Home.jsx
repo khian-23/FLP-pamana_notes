@@ -1,3 +1,4 @@
+// src/app/pages/Home.jsx
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -9,12 +10,18 @@ import {
   Grid,
   Button,
   TextField,
+  Chip,
 } from "@mui/material";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import NoteDetailModal from "./NoteDetailModal";
+
+const visibilityColor = {
+  public: "success",
+  school: "info",
+  course: "secondary",
+};
 
 const Home = () => {
-  const navigate = useNavigate();
   const token = localStorage.getItem("access");
 
   const [notes, setNotes] = useState([]);
@@ -22,6 +29,9 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailNote, setDetailNote] = useState(null);
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -34,7 +44,7 @@ const Home = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
-        const data = token ? res.data.notes : res.data;
+        const data = token ? res.data.notes : res.data.notes;
         setNotes(data || []);
         setFilteredNotes(data || []);
       } catch {
@@ -58,12 +68,9 @@ const Home = () => {
     );
   }, [search, notes]);
 
-  const handleViewDetails = (id) => {
-    if (!token) {
-      navigate("/login");
-    } else {
-      navigate(`/app/notes/${id}`);
-    }
+  const openDetails = (note) => {
+    setDetailNote(note);
+    setDetailOpen(true);
   };
 
   if (loading) {
@@ -74,9 +81,7 @@ const Home = () => {
     );
   }
 
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
-  }
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
     <Box>
@@ -95,32 +100,51 @@ const Home = () => {
       {!filteredNotes.length && <Typography>No notes found.</Typography>}
 
       <Grid container spacing={2}>
-        {filteredNotes.map((note) => (
-          <Grid item xs={12} sm={6} md={4} key={note.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{note.title}</Typography>
+        {filteredNotes.map((note) => {
+          const visibility = note.visibility || "public";
 
-                <Typography variant="body2" color="text.secondary">
-                  Subject: {note.subject}
-                </Typography>
+          return (
+            <Grid item xs={12} sm={6} md={4} key={note.id}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6">{note.title}</Typography>
 
-                <Typography variant="caption" display="block">
-                  Uploaded by: {note.author_school_id}
-                </Typography>
+                  <Chip
+                    label={visibility.toUpperCase()}
+                    color={visibilityColor[visibility] || "default"}
+                    size="small"
+                    sx={{ mt: 1, mb: 1 }}
+                  />
 
-                <Button
-                  size="small"
-                  sx={{ mt: 1 }}
-                  onClick={() => handleViewDetails(note.id)}
-                >
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                  <Typography variant="body2">
+                    Subject: {note.subject}
+                  </Typography>
+
+                  <Typography variant="caption" display="block">
+                    Uploaded by: {note.author_school_id}
+                  </Typography>
+
+                  <Button
+                    size="small"
+                    sx={{ mt: 2 }}
+                    variant="outlined"
+                    onClick={() => openDetails(note)}
+                  >
+                    View
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
+
+      <NoteDetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        note={detailNote}
+        token={token}
+      />
     </Box>
   );
 };

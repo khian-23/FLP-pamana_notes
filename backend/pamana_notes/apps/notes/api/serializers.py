@@ -1,52 +1,54 @@
 from rest_framework import serializers
-from apps.notes.models import Note
-from apps.notes.models import NoteAction
+from apps.notes.models import Note, Comment
 
 
 class AdminNoteSerializer(serializers.ModelSerializer):
-    file = serializers.SerializerMethodField()
+    subject = serializers.CharField(source="subject.name", read_only=True)
     author_school_id = serializers.CharField(
-        source="uploader.school_id",
-        read_only=True
+        source="uploader.school_id", read_only=True
     )
-    subject = serializers.CharField(
-        source="subject.name",
-        read_only=True
+    likes_count = serializers.IntegerField(
+        source="likes.count", read_only=True
     )
-    status = serializers.SerializerMethodField()
+    saves_count = serializers.IntegerField(
+        source="saves.count", read_only=True
+    )
 
     class Meta:
         model = Note
         fields = [
             "id",
             "title",
-            "author_school_id",
-            "subject",
-            "status",
+            "description",
             "file",
+            "subject",
+            "visibility",
+            "author_school_id",
             "uploaded_at",
-            "rejection_reason",
-            "actions",
+            "likes_count",
+            "saves_count",
         ]
 
-    def get_status(self, obj):
-        if obj.is_approved:
-            return "approved"
-        if obj.is_rejected:
-            return "rejected"
-        return "pending"
 
-    def get_file(self, obj):
-        if not obj.file:
-            return None
-        request = self.context.get("request")
-        if request:
-            return request.build_absolute_uri(obj.file.url)
-        return obj.file.url
-
-class NoteActionSerializer(serializers.ModelSerializer):
-    actor = serializers.CharField(source="actor.school_id", default=None)
+class CommentSerializer(serializers.ModelSerializer):
+    user_school_id = serializers.CharField(
+        source="user.school_id", read_only=True
+    )
+    replies = serializers.SerializerMethodField()
 
     class Meta:
-        model = NoteAction
-        fields = ["action", "actor", "reason", "created_at"]
+        model = Comment
+        fields = [
+            "id",
+            "content",
+            "user_school_id",
+            "created_at",
+            "parent",
+            "replies",
+        ]
+
+    def get_replies(self, obj):
+        return CommentSerializer(
+            obj.replies.all().order_by("created_at"),
+            many=True
+        ).data
