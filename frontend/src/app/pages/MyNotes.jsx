@@ -1,38 +1,82 @@
-import { Grid, Paper, Typography, Chip } from "@mui/material";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+} from "@mui/material";
+import axios from "axios";
 
-const notes = [
-  { title: "Math Notes", status: "Approved" },
-  { title: "Physics Reviewer", status: "Pending" },
-  { title: "Chem Lab", status: "Rejected" },
-];
-
-const statusColor = {
-  Approved: "success",
-  Pending: "warning",
-  Rejected: "error",
+const statusColor = (status) => {
+  if (status === "approved") return "success";
+  if (status === "rejected") return "error";
+  return "warning";
 };
 
-export default function MyNotes() {
+const MyNotes = () => {
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMyNotes = async () => {
+      try {
+        const token = localStorage.getItem("access");
+
+        const res = await axios.get(
+          "http://127.0.0.1:8000/notes/api/student/my-notes/",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setNotes(res.data || []);
+      } catch {
+        setError("Failed to load your notes.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyNotes();
+  }, []);
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
+  if (!notes.length) return <Typography>No uploaded notes.</Typography>;
+
   return (
-    <>
-      <Typography variant="h5" gutterBottom>
+    <Box>
+      <Typography variant="h5" sx={{ mb: 2 }}>
         My Notes
       </Typography>
 
       <Grid container spacing={2}>
-        {notes.map((n, i) => (
-          <Grid item xs={12} md={6} key={i}>
-            <Paper sx={{ p: 2, display: "flex", justifyContent: "space-between" }}>
-              <Typography>{n.title}</Typography>
-              <Chip
-                label={n.status}
-                color={statusColor[n.status]}
-                size="small"
-              />
-            </Paper>
+        {notes.map((note) => (
+          <Grid item xs={12} sm={6} md={4} key={note.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6">{note.title}</Typography>
+
+                <Chip
+                  label={note.status}
+                  color={statusColor(note.status)}
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              </CardContent>
+            </Card>
           </Grid>
         ))}
       </Grid>
-    </>
+    </Box>
   );
-}
+};
+
+export default MyNotes;
