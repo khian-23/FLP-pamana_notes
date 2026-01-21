@@ -1,4 +1,3 @@
-// src/app/pages/Home.jsx
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -12,8 +11,10 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
-import axios from "axios";
 import NoteDetailModal from "./NoteDetailModal";
+import { apiFetch } from "../../services/api";
+import { getAccessToken } from "../../services/auth";
+
 
 const visibilityColor = {
   public: "success",
@@ -22,7 +23,7 @@ const visibilityColor = {
 };
 
 const Home = () => {
-  const token = localStorage.getItem("access");
+  const token = getAccessToken();
 
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -33,21 +34,18 @@ const Home = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailNote, setDetailNote] = useState(null);
 
+  // ✅ FETCH NOTES (AUTH-AWARE)
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const url = token
-          ? "http://127.0.0.1:8000/notes/api/student/dashboard/"
-          : "http://127.0.0.1:8000/notes/api/public/";
+        const data = token
+          ? await apiFetch("/api/notes/student/dashboard/")
+          : await apiFetch("/api/notes/public/");
 
-        const res = await axios.get(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-
-        const data = token ? res.data.notes : res.data.notes;
-        setNotes(data || []);
-        setFilteredNotes(data || []);
-      } catch {
+        setNotes(data.notes || []);
+        setFilteredNotes(data.notes || []);
+      } catch (err) {
+        console.error(err);
         setError("Failed to load notes.");
       } finally {
         setLoading(false);
@@ -57,6 +55,7 @@ const Home = () => {
     fetchNotes();
   }, [token]);
 
+  // 🔍 SEARCH FILTER
   useEffect(() => {
     const q = search.toLowerCase();
     setFilteredNotes(

@@ -29,11 +29,12 @@ const UploadNote = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  // ✅ FETCH FILTERED SUBJECTS (GENERAL + USER COURSE MAJORS)
   useEffect(() => {
     const token = localStorage.getItem("access");
 
     axios
-      .get("http://127.0.0.1:8000/api/subjects/", {
+      .get("http://127.0.0.1:8000/api/subjects/student/", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setSubjects(res.data))
@@ -131,12 +132,20 @@ const UploadNote = () => {
           }
         />
 
+        {/* ✅ SUBJECT SELECTION (FILTERED) */}
         <Autocomplete
           options={subjects}
-          getOptionLabel={(opt) => opt.name}
+          getOptionLabel={(opt) =>
+            `${opt.name} (${opt.type})`
+          }
           onChange={(_, value) => setForm({ ...form, subject: value })}
           renderInput={(params) => (
-            <TextField {...params} label="Subject" required sx={{ mb: 2 }} />
+            <TextField
+              {...params}
+              label="Subject"
+              required
+              sx={{ mb: 2 }}
+            />
           )}
         />
 

@@ -23,27 +23,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [subjects, setSubjects] = useState([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [subjectsError, setSubjectsError] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   const navigate = useNavigate();
 
-  // 🔹 Load courses when switching to register
   useEffect(() => {
     if (mode !== "register") return;
 
-    setLoadingSubjects(true);
-    setSubjectsError(null);
-
+    setLoadingCourses(true);
     fetch("http://127.0.0.1:8000/api/subjects/courses/public/")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load courses");
-        return res.json();
-      })
-      .then((data) => setSubjects(data))
-      .catch(() => setSubjectsError("Unable to load courses"))
-      .finally(() => setLoadingSubjects(false));
+      .then((res) => res.json())
+      .then(setCourses)
+      .finally(() => setLoadingCourses(false));
   }, [mode]);
 
   const handleLogin = async (e) => {
@@ -78,19 +70,15 @@ export default function LoginPage() {
       return;
     }
 
-    alert("Account created. Please log in.");
-    setMode("login");
-    setPassword("");
-    setConfirmPassword("");
+    // 🔑 AUTO LOGIN AFTER REGISTER
+    try {
+      await login(school_id, password);
+      navigate("/app");
+    } catch {
+      alert("Account created, please log in.");
+      setMode("login");
+    }
   };
-
-  const passwordsMatch =
-    mode === "login" || password === confirmPassword;
-
-  const canRegister =
-    !loadingSubjects &&
-    subjects.length > 0 &&
-    passwordsMatch;
 
   return (
     <Box
@@ -110,14 +98,13 @@ export default function LoginPage() {
           p: 4,
           backgroundColor: "#054d19",
           borderRadius: 3,
-          boxShadow: "0 20px 40px rgba(0,0,0,0.35)",
         }}
       >
         <Typography color="white" variant="h5" textAlign="center">
           {mode === "login" ? "Login" : "Register"}
         </Typography>
 
-        <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.2)" }} />
+        <Divider sx={{ my: 2 }} />
 
         <TextField
           label="School ID"
@@ -126,8 +113,6 @@ export default function LoginPage() {
           value={school_id}
           onChange={(e) => setSchoolId(e.target.value)}
           required
-          InputLabelProps={{ style: { color: "#fff" } }}
-          InputProps={{ style: { color: "#fff" } }}
         />
 
         {mode === "register" && (
@@ -139,8 +124,6 @@ export default function LoginPage() {
               value={first_name}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              InputLabelProps={{ style: { color: "#fff" } }}
-              InputProps={{ style: { color: "#fff" } }}
             />
 
             <TextField
@@ -150,8 +133,6 @@ export default function LoginPage() {
               value={last_name}
               onChange={(e) => setLastName(e.target.value)}
               required
-              InputLabelProps={{ style: { color: "#fff" } }}
-              InputProps={{ style: { color: "#fff" } }}
             />
 
             <TextField
@@ -162,18 +143,10 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              InputLabelProps={{ style: { color: "#fff" } }}
-              InputProps={{ style: { color: "#fff" } }}
             />
 
-            {loadingSubjects ? (
-              <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : subjectsError ? (
-              <Typography color="error" textAlign="center" mt={1}>
-                {subjectsError}
-              </Typography>
+            {loadingCourses ? (
+              <CircularProgress size={22} />
             ) : (
               <TextField
                 select
@@ -183,12 +156,10 @@ export default function LoginPage() {
                 value={course}
                 onChange={(e) => setCourse(e.target.value)}
                 required
-                InputLabelProps={{ style: { color: "#fff" } }}
-                InputProps={{ style: { color: "#fff" } }}
               >
-                {subjects.map((s) => (
-                  <MenuItem key={s.id} value={s.id}>
-                    {s.name}
+                {courses.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -204,8 +175,6 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          InputLabelProps={{ style: { color: "#fff" } }}
-          InputProps={{ style: { color: "#fff" } }}
         />
 
         {mode === "register" && (
@@ -216,13 +185,7 @@ export default function LoginPage() {
             margin="normal"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            error={!passwordsMatch}
-            helperText={
-              !passwordsMatch ? "Passwords do not match" : ""
-            }
             required
-            InputLabelProps={{ style: { color: "#fff" } }}
-            InputProps={{ style: { color: "#fff" } }}
           />
         )}
 
@@ -230,46 +193,20 @@ export default function LoginPage() {
           type="submit"
           fullWidth
           variant="contained"
-          disabled={mode === "register" && !canRegister}
-          sx={{
-            mt: 3,
-            backgroundColor: "#087f30",
-            "&:hover": { backgroundColor: "#0aa03d" },
-            py: 1.2,
-            fontWeight: 600,
-          }}
+          sx={{ mt: 3 }}
         >
           {mode === "login" ? "Login" : "Register"}
         </Button>
 
-        <Typography
-          mt={3}
-          textAlign="center"
-          color="rgba(255,255,255,0.85)"
-          fontSize={14}
-        >
+        <Typography mt={2} textAlign="center">
           {mode === "login" ? (
-            <>
-              No account?{" "}
-              <Box
-                component="span"
-                sx={{ cursor: "pointer", fontWeight: 600, color: "#7CFC9A" }}
-                onClick={() => setMode("register")}
-              >
-                Register
-              </Box>
-            </>
+            <span onClick={() => setMode("register")} style={{ cursor: "pointer" }}>
+              No account? Register
+            </span>
           ) : (
-            <>
-              Already have an account?{" "}
-              <Box
-                component="span"
-                sx={{ cursor: "pointer", fontWeight: 600, color: "#7CFC9A" }}
-                onClick={() => setMode("login")}
-              >
-                Login
-              </Box>
-            </>
+            <span onClick={() => setMode("login")} style={{ cursor: "pointer" }}>
+              Already have an account? Login
+            </span>
           )}
         </Typography>
       </Box>

@@ -13,25 +13,31 @@ class StudentDashboardAPIView(APIView):
     def get(self, request):
         user = request.user
 
-        # base queryset: only approved + not deleted
-        notes_qs = Note.objects.filter(
-            is_deleted=False,
-            is_approved=True,
-        ).filter(
-            Q(visibility="public") |
-            Q(visibility="school") |
-            Q(
-                visibility="course",
-                subject__course=user.course  # 🔒 course-based access
+        notes_qs = (
+            Note.objects.filter(
+                is_deleted=False,
+                is_approved=True,
             )
-        ).select_related(
-            "uploader",
-            "subject",
-            "subject__course",
-        ).order_by("-uploaded_at")
+            .filter(
+                Q(visibility="public") |
+                Q(visibility="school") |
+                (
+                    Q(visibility="course") &
+                    (
+                        Q(subject__course=user.course) |
+                        Q(subject__course__isnull=True)
+                    )
+                )
+            )
+            .select_related(
+                "uploader",
+                "subject",
+                "subject__course",
+            )
+            .order_by("-uploaded_at")
+        )
 
         data = {
-            # dashboard counters
             "my_notes": Note.objects.filter(
                 uploader=user, is_deleted=False
             ).count(),
@@ -47,8 +53,6 @@ class StudentDashboardAPIView(APIView):
             "rejected": Note.objects.filter(
                 uploader=user, is_rejected=True, is_deleted=False
             ).count(),
-
-            # home feed
             "notes": AdminNoteSerializer(
                 notes_qs,
                 many=True,
