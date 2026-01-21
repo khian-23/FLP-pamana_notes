@@ -1,75 +1,142 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   TextField,
   Button,
-  Stack,
   MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
+  Alert,
+  Paper,
+  Autocomplete,
 } from "@mui/material";
+import axios from "axios";
 
-export default function UploadNote() {
+const UploadNote = () => {
+  const [subjects, setSubjects] = useState([]);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    subject: null,
+    visibility: "school",
+    file: null,
+  });
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+
+    axios.get("http://127.0.0.1:8000/api/subjects/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((res) => setSubjects(res.data))
+    .catch(() => setSubjects([]));
+  }, []);
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const token = localStorage.getItem("access");
+    const data = new FormData();
+
+    data.append("title", form.title);
+    data.append("description", form.description);
+    data.append("subject", form.subject?.id);
+    data.append("visibility", form.visibility);
+    data.append("file", form.file);
+
+    try {
+      await axios.post(
+        "http://127.0.0.1:8000/notes/api/student/upload/",
+        data,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSuccess("Note uploaded successfully");
+    } catch {
+      setError("Upload failed");
+    }
+  };
+
   return (
-    <>
-      <Typography variant="h5" gutterBottom>
+    <Paper sx={{ p: 3, maxWidth: 600 }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>
         Upload Note
       </Typography>
 
-      <Box maxWidth={520}>
-        <Stack spacing={2}>
-          {/* TITLE */}
-          <TextField
-            label="Title"
-            placeholder="Enter note title"
-            fullWidth
+      {success && <Alert severity="success">{success}</Alert>}
+      {error && <Alert severity="error">{error}</Alert>}
+
+      <Box component="form" onSubmit={handleSubmit}>
+        <TextField
+          label="Title"
+          fullWidth
+          required
+          sx={{ mb: 2 }}
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+
+        <TextField
+          label="Description"
+          fullWidth
+          multiline
+          rows={3}
+          sx={{ mb: 2 }}
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+        />
+
+        <Autocomplete
+          options={subjects}
+          getOptionLabel={(opt) => opt.name}
+          onChange={(_, value) => setForm({ ...form, subject: value })}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Subject"
+              required
+              sx={{ mb: 2 }}
+            />
+          )}
+        />
+
+        <TextField
+          select
+          label="Visibility"
+          fullWidth
+          sx={{ mb: 2 }}
+          value={form.visibility}
+          onChange={(e) => setForm({ ...form, visibility: e.target.value })}
+        >
+          <MenuItem value="public">Public</MenuItem>
+          <MenuItem value="school">School</MenuItem>
+          <MenuItem value="course">Course</MenuItem>
+        </TextField>
+
+        <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+          Select File
+          <input
+            hidden
+            type="file"
+            onChange={(e) =>
+              setForm({ ...form, file: e.target.files[0] })
+            }
           />
+        </Button>
 
-          {/* DESCRIPTION */}
-          <TextField
-            label="Description"
-            placeholder="Brief description of the note"
-            fullWidth
-            multiline
-            rows={3}
-          />
+        <br />
 
-          {/* SUBJECT */}
-          <TextField
-            label="Subject"
-            placeholder="e.g. Data Structures"
-            fullWidth
-          />
-
-          {/* VISIBILITY */}
-          <FormControl fullWidth>
-            <InputLabel>Visibility</InputLabel>
-            <Select label="Visibility" defaultValue="public">
-              <MenuItem value="public">Public</MenuItem>
-              <MenuItem value="school">School Only</MenuItem>
-              <MenuItem value="course">Course Only</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* FILE */}
-          <Button
-            variant="outlined"
-            component="label"
-          >
-            Upload File
-            <input type="file" hidden />
-          </Button>
-
-          {/* SUBMIT */}
-          <Button
-            variant="contained"
-            sx={{ bgcolor: "#0b6623" }}
-          >
-            Submit for Review
-          </Button>
-        </Stack>
+        <Button type="submit" variant="contained">
+          Upload
+        </Button>
       </Box>
-    </>
+    </Paper>
   );
-}
+};
+
+export default UploadNote;
