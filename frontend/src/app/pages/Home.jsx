@@ -8,13 +8,16 @@ import {
   CardContent,
   Grid,
   Button,
+  TextField,
 } from "@mui/material";
 import axios from "axios";
 
 const Home = () => {
   const [notes, setNotes] = useState([]);
+  const [filteredNotes, setFilteredNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -24,13 +27,14 @@ const Home = () => {
         const res = await axios.get(
           "http://127.0.0.1:8000/notes/api/student/dashboard/",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: token
+              ? { Authorization: `Bearer ${token}` }
+              : {},
           }
         );
 
         setNotes(res.data.notes || []);
+        setFilteredNotes(res.data.notes || []);
       } catch {
         setError("Failed to load notes.");
       } finally {
@@ -40,6 +44,18 @@ const Home = () => {
 
     fetchNotes();
   }, []);
+
+  // 🔍 SEARCH LOGIC
+  useEffect(() => {
+    const q = search.toLowerCase();
+
+    const data = notes.filter((note) =>
+      note.title.toLowerCase().includes(q) ||
+      (note.subject && note.subject.toLowerCase().includes(q))
+    );
+
+    setFilteredNotes(data);
+  }, [search, notes]);
 
   if (loading) {
     return (
@@ -53,18 +69,28 @@ const Home = () => {
     return <Alert severity="error">{error}</Alert>;
   }
 
-  if (!notes.length) {
-    return <Typography>No notes available.</Typography>;
-  }
-
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 2 }}>
         Latest Notes
       </Typography>
 
+      {/* SEARCH */}
+      <TextField
+        fullWidth
+        label="Search notes by title or subject"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 3 }}
+      />
+
+      {!filteredNotes.length && (
+        <Typography>No notes found.</Typography>
+      )}
+
+      {/* NOTES GRID */}
       <Grid container spacing={2}>
-        {notes.map((note) => (
+        {filteredNotes.map((note) => (
           <Grid item xs={12} sm={6} md={4} key={note.id}>
             <Card>
               <CardContent>
@@ -81,7 +107,7 @@ const Home = () => {
                 </Typography>
 
                 <Typography variant="caption" display="block">
-                  Status: {note.status}
+                  Visibility: {note.visibility}
                 </Typography>
 
                 {note.file && (
@@ -89,6 +115,7 @@ const Home = () => {
                     size="small"
                     href={note.file}
                     target="_blank"
+                    rel="noopener noreferrer"
                     sx={{ mt: 1 }}
                   >
                     View PDF
