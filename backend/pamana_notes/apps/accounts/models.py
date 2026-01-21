@@ -34,11 +34,26 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     school_id = models.CharField(max_length=20, unique=True)
     username = None
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="students"
+    )
+
     USERNAME_FIELD = "school_id"
     REQUIRED_FIELDS = ["email"]
-    saved_notes = models.ManyToManyField("notes.Note", blank=True, related_name="saved_by")
+
+    saved_notes = models.ManyToManyField(
+        "notes.Note",
+        blank=True,
+        related_name="saved_by"
+    )
 
     objects = CustomUserManager()
+
 
     def __str__(self):
         return self.school_id

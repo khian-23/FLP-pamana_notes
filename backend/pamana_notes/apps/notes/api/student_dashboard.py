@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db.models import Q
 
 from apps.notes.models import Note
 from apps.notes.api.serializers import AdminNoteSerializer
@@ -12,18 +13,42 @@ class StudentDashboardAPIView(APIView):
     def get(self, request):
         user = request.user
 
+        # base queryset: only approved + not deleted
         notes_qs = Note.objects.filter(
             is_deleted=False,
-            visibility__in=["public", "school", "course"],
-        ).exclude(is_rejected=True)
+            is_approved=True,
+        ).filter(
+            Q(visibility="public") |
+            Q(visibility="school") |
+            Q(
+                visibility="course",
+                subject__course=user.course  # 🔒 course-based access
+            )
+        ).select_related(
+            "uploader",
+            "subject",
+            "subject__course",
+        ).order_by("-uploaded_at")
 
         data = {
-            "my_notes": Note.objects.filter(uploader=user, is_deleted=False).count(),
-            "approved": Note.objects.filter(uploader=user, is_approved=True, is_deleted=False).count(),
-            "pending": Note.objects.filter(
-                uploader=user, is_approved=False, is_rejected=False, is_deleted=False
+            # dashboard counters
+            "my_notes": Note.objects.filter(
+                uploader=user, is_deleted=False
             ).count(),
-            "rejected": Note.objects.filter(uploader=user, is_rejected=True, is_deleted=False).count(),
+            "approved": Note.objects.filter(
+                uploader=user, is_approved=True, is_deleted=False
+            ).count(),
+            "pending": Note.objects.filter(
+                uploader=user,
+                is_approved=False,
+                is_rejected=False,
+                is_deleted=False
+            ).count(),
+            "rejected": Note.objects.filter(
+                uploader=user, is_rejected=True, is_deleted=False
+            ).count(),
+
+            # home feed
             "notes": AdminNoteSerializer(
                 notes_qs,
                 many=True,
@@ -31,7 +56,4 @@ class StudentDashboardAPIView(APIView):
             ).data,
         }
 
-        return Response({
-            "count": notes_qs.count(),
-            "notes": list(notes_qs.values("id", "title", "visibility"))
-        })
+        return Response(data)

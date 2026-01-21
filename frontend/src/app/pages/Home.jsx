@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   Grid,
+  Button,
 } from "@mui/material";
 import axios from "axios";
 
@@ -20,23 +21,18 @@ const Home = () => {
       try {
         const token = localStorage.getItem("access");
 
-      const res = await axios.get(
-        "http://127.0.0.1:8000/notes/api/student/dashboard/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+        const res = await axios.get(
+          "http://127.0.0.1:8000/notes/api/student/dashboard/",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         setNotes(res.data.notes || []);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          setError("Session expired. Please log in again.");
-        } else {
-          setError("Failed to load notes.");
-        }
+      } catch {
+        setError("Failed to load notes.");
       } finally {
         setLoading(false);
       }
@@ -72,13 +68,32 @@ const Home = () => {
           <Grid item xs={12} sm={6} md={4} key={note.id}>
             <Card>
               <CardContent>
-                <Typography variant="h6">{note.title}</Typography>
+                <Typography variant="h6">
+                  {note.title}
+                </Typography>
+
                 <Typography variant="body2" color="text.secondary">
-                  {note.description || "No description"}
+                  Subject: {note.subject}
                 </Typography>
-                <Typography variant="caption">
-                  Uploaded by: {note.uploader_name || "Unknown"}
+
+                <Typography variant="caption" display="block">
+                  Uploaded by: {note.author_school_id}
                 </Typography>
+
+                <Typography variant="caption" display="block">
+                  Status: {note.status}
+                </Typography>
+
+                {note.file && (
+                  <Button
+                    size="small"
+                    href={note.file}
+                    target="_blank"
+                    sx={{ mt: 1 }}
+                  >
+                    View PDF
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </Grid>
