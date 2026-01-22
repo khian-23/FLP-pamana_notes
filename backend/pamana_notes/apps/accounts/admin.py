@@ -1,35 +1,40 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.core.validators import RegexValidator
+from django.db import transaction
+
 from .models import CustomUser
 from apps.subjects.models import Course, Enrollment
-from django.contrib.auth.forms import UserChangeForm
-from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
-import re
-from django.db import transaction
-from django.core.validators import RegexValidator
-from django.contrib.auth.forms import UserCreationForm
 
 User = get_user_model()
 
-
 # -----------------------------
-# Forms
+# Validators
 # -----------------------------
 school_id_validator = RegexValidator(
     regex=r"^\d{4}-\d{4}-H$",
     message="School ID must be in the format NNNN-NNNN-H (e.g. 1234-5678-H).",
 )
 
-
+# -----------------------------
+# Forms
+# -----------------------------
 class CustomUserCreationForm(UserCreationForm):
     """
     Admin-only user creation form.
-    Handles password validation via UserCreationForm.
-    Course enrollment is intentionally excluded from save()
-    and handled in CustomUserAdmin.save_model().
+    Course enrollment is handled in the admin layer.
     """
+
+    school_id = forms.CharField(
+        validators=[school_id_validator],
+        help_text="Format: NNNN-NNNN-H",
+    )
+
+    first_name = forms.CharField(required=True)
+    last_name = forms.CharField(required=True)
 
     course = forms.ModelChoiceField(
         queryset=Course.objects.order_by("name"),
@@ -37,39 +42,35 @@ class CustomUserCreationForm(UserCreationForm):
         help_text="Select the student's course.",
     )
 
-    school_id = forms.CharField(
-        validators=[school_id_validator],
-        help_text="Format: NNNN-NNNN-H",
-    )
-
     class Meta:
         model = User
-        fields = ("school_id", "email")
-
-    def clean(self):
-        """
-        Hook for future cross-field validation.
-        """
-        cleaned_data = super().clean()
-        return cleaned_data
+        fields = (
+            "school_id",
+            "email",
+            "first_name",
+            "last_name",
+        )
 
     def save(self, commit=True):
-        """
-        Save the user only.
-        Course assignment is handled in the admin layer.
-        """
         user = super().save(commit=False)
-
         if commit:
             user.save()
-
         return user
+
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = User
-        fields = ("school_id", "email", "is_staff", "is_active", "is_superuser", "groups")
-
+        fields = (
+            "school_id",
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "is_active",
+            "is_superuser",
+            "groups",
+        )
 
 # -----------------------------
 # Admin
@@ -80,9 +81,14 @@ class CustomUserAdmin(UserAdmin):
     form = CustomUserChangeForm
     model = CustomUser
 
+    # ============================
+    # LIST VIEW
+    # ============================
     list_display = (
         "school_id",
         "email",
+        "first_name",
+        "last_name",
         "is_staff",
         "is_active",
         "is_superuser",
@@ -90,17 +96,38 @@ class CustomUserAdmin(UserAdmin):
 
     list_filter = (
         "is_staff",
-        "is_superuser",
         "is_active",
-        "groups",
+        "is_superuser",
+        "role",
+        "course",
     )
 
-    search_fields = ("school_id", "email")
+    search_fields = (
+        "school_id",
+        "email",
+        "first_name",
+        "last_name",
+    )
+
     ordering = ("school_id",)
 
+    # ============================
+    # DETAIL VIEW
+    # ============================
     fieldsets = (
         (None, {
-            "fields": ("school_id", "email", "password"),
+            "fields": (
+                "school_id",
+                "email",
+                "password",
+            ),
+        }),
+        ("Personal info", {
+            "fields": (
+                "first_name",
+                "last_name",
+                "course",
+            ),
         }),
         ("Permissions", {
             "fields": (
@@ -116,12 +143,17 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
+    # ============================
+    # ADD VIEW
+    # ============================
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
             "fields": (
                 "school_id",
                 "email",
+                "first_name",
+                "last_name",
                 "password1",
                 "password2",
                 "course",
@@ -135,7 +167,6 @@ class CustomUserAdmin(UserAdmin):
     def save_model(self, request, obj, form, change):
         """
         Persist the user, then ensure course enrollment.
-        Atomic to avoid partial writes if enrollment fails.
         """
         super().save_model(request, obj, form, change)
 

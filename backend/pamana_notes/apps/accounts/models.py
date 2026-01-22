@@ -23,10 +23,18 @@ class CustomUserManager(BaseUserManager):
         if not extra_fields.get("course"):
             raise ValueError("Course must be set")
 
+        course = extra_fields.pop("course")
+
+        # 🔒 FIX: Convert course ID → Course instance if needed
+        if isinstance(course, (int, str)):
+            course = Course.objects.get(pk=course)
+
         email = self.normalize_email(email)
+
         user = self.model(
-            school_id=school_id,
+            school_id=school_id.strip(),
             email=email,
+            course=course,
             **extra_fields
         )
         user.set_password(password)
@@ -36,6 +44,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, school_id, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", CustomUser.Role.ADMIN)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
@@ -46,8 +55,19 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractUser):
+    class Role(models.TextChoices):
+        STUDENT = "student", "Student"
+        ADMIN = "admin", "Admin"
+
     username = None
-    school_id = models.CharField(max_length=20, unique=True)
+
+    school_id = models.CharField(
+        max_length=20,
+        unique=True,
+        db_index=True
+    )
+
+    email = models.EmailField(unique=True)
 
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
@@ -55,13 +75,15 @@ class CustomUser(AbstractUser):
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
-        null=True,        # ✅ REQUIRED with SET_NULL
-        blank=False,
+        null=True,
         related_name="students"
     )
 
-    USERNAME_FIELD = "school_id"
-    REQUIRED_FIELDS = ["email", "first_name", "last_name", "course"]
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.STUDENT
+    )
 
     saved_notes = models.ManyToManyField(
         "notes.Note",
@@ -69,30 +91,49 @@ class CustomUser(AbstractUser):
         related_name="saved_by"
     )
 
+    USERNAME_FIELD = "school_id"
+    REQUIRED_FIELDS = ["email", "first_name", "last_name", "course"]
+
     objects = CustomUserManager()
 
     def __str__(self):
         return self.school_id
 
     @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
     def avatar_url(self):
-        if hasattr(self, "profile") and self.profile.image:
-            return self.profile.image.url
+        if hasattr(self, "profile") and self.profile.avatar:
+            return self.profile.avatar.url
         return static("img/default-avatar.png")
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile"
+    )
+
+    avatar = models.ImageField(
+        upload_to="profiles/",
+        blank=True,
+        null=True
+    )
+
+    bio = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.school_id
+        return f"Profile - {self.user.school_id}"
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.get_or_create(user=instance)
+        Profile.objects.create(user=instance)
     else:
         if hasattr(instance, "profile"):
             instance.profile.save()

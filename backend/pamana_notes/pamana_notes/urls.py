@@ -20,7 +20,6 @@ urlpatterns = [
     path("api/subjects/", include("apps.subjects.api.urls")),  # ✅ CORRECT
     path("api/accounts/", include("apps.accounts.api.urls")),
     path("api/notes/", include("apps.notes.api.urls")),  # ✅ ADD THIS
-    path("api/notes/", include("apps.notes.api.urls")),
 
 
 ]

@@ -8,7 +8,6 @@ from .api_views import (
 )
 from django.urls import path, include
 
-
 app_name = "notes"
 
 urlpatterns = [
@@ -25,6 +24,8 @@ urlpatterns = [
     path("my-notes/", views.my_notes),
     path("saved/", views.saved_notes_list),
     path("pending/", views.pending_notes),  # HTML PAGE ONLY
+
+    path("notes/<int:note_id>/like/", views.ToggleLikeAPIView.as_view()),
 
     # ======================
     # API (JSON ONLY)

@@ -2,9 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from apps.subjects.models import Enrollment
 
-from apps.subjects.models import Course
+from apps.subjects.models import Course, Enrollment
 from .models import Profile
 
 User = get_user_model()
@@ -26,6 +25,18 @@ class CustomUserCreationForm(UserCreationForm):
         help_text="Format: NNNN-NNNN-H",
     )
 
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First Name",
+    )
+
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Last Name",
+    )
+
     course = forms.ModelChoiceField(
         queryset=Course.objects.all(),
         required=True,
@@ -34,17 +45,28 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ("school_id", "email", "password1", "password2", "course")
+        fields = (
+            "school_id",
+            "email",
+            "first_name",
+            "last_name",
+            "password1",
+            "password2",
+            "course",
+        )
 
     def save(self, commit=True):
         user = super().save(commit=False)
 
         if commit:
             user.save()
-            course = self.cleaned_data["course"]
-            Enrollment.objects.create(student=user, course=course)
+            Enrollment.objects.create(
+                student=user,
+                course=self.cleaned_data["course"]
+            )
 
         return user
+
 
 # ============================
 # Authentication Form (School ID Login)
@@ -55,19 +77,20 @@ class SchoolIDAuthenticationForm(AuthenticationForm):
         widget=forms.TextInput(attrs={"placeholder": "1234-5678-H"}),
     )
 
+
 # ============================
 # Profile Form
 # ============================
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ("image",)
+        fields = ("avatar", "bio")
         widgets = {
-            "image": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+            "avatar": forms.ClearableFileInput(attrs={"accept": "image/*"}),
         }
-    def clean_image(self):
-        image = self.cleaned_data.get("image")
-        if image:
-            if image.size > 2 * 1024 * 1024:  # 2MB limit
-                raise forms.ValidationError("Image file too large ( > 2MB ).")
-        return image
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get("avatar")
+        if avatar and avatar.size > 2 * 1024 * 1024:  # 2MB limit
+            raise forms.ValidationError("Image file too large ( > 2MB ).")
+        return avatar

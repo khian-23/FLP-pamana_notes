@@ -11,6 +11,10 @@ from django.db.models import Count
 
 from apps.notes.models import Note
 from .serializers import AdminNoteSerializer
+from .serializers import CommentSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import DestroyAPIView
+from apps.notes.models import Comment
 
 User = get_user_model()
 
@@ -193,3 +197,31 @@ def public_notes_api(request):
         context={"request": request}
     )
     return Response(serializer.data)
+
+class NoteCommentsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, note_id):
+        comments = Comment.objects.filter(note_id=note_id).order_by("-created_at")
+        serializer = CommentSerializer(
+            comments, many=True, context={"request": request}
+        )
+        return Response({"comments": serializer.data})
+
+    def post(self, request, note_id):
+        comment = Comment.objects.create(
+            note_id=note_id,
+            user=request.user,
+            content=request.data.get("content"),
+        )
+        serializer = CommentSerializer(
+            comment, context={"request": request}
+        )
+        return Response(serializer.data, status=201)
+    
+class CommentDeleteAPIView(DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Comment.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)

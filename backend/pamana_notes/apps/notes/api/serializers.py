@@ -45,6 +45,7 @@ class CommentSerializer(serializers.ModelSerializer):
         source="user.school_id", read_only=True
     )
     replies = serializers.SerializerMethodField()
+    can_delete = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
@@ -55,6 +56,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
             "parent",
             "replies",
+            "can_delete",
         ]
 
     def get_replies(self, obj):
@@ -62,3 +64,9 @@ class CommentSerializer(serializers.ModelSerializer):
             obj.replies.all().order_by("created_at"),
             many=True
         ).data
+
+    def get_can_delete(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return False
+        return request.user == obj.user or request.user.is_staff

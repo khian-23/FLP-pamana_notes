@@ -1,11 +1,9 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
 from django.db.models import Avg
 import os
 
-User = get_user_model()
 
 # --------------------
 # File validation
@@ -36,8 +34,12 @@ class Note(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     content = models.TextField(blank=True)
-    file = models.FileField(upload_to="files/", blank=True, null=True)
-
+    file = models.FileField(
+        upload_to="files/",
+        blank=True,
+        null=True,
+        validators=[validate_file_type],
+    )
 
     uploader = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -77,10 +79,8 @@ class Note(models.Model):
         if self.is_approved:
             if self.visibility == self.VISIBILITY_PUBLIC:
                 return True
-
             if not user.is_authenticated:
                 return False
-
             return user == self.uploader or user.is_staff
 
         if not user.is_authenticated:
@@ -94,14 +94,14 @@ class Note(models.Model):
 # --------------------
 class Bookmark(models.Model):
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="bookmarks"
+        related_name="bookmarks",
     )
     note = models.ForeignKey(
         Note,
         on_delete=models.CASCADE,
-        related_name="bookmarked_by"
+        related_name="bookmarked_by",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -161,6 +161,9 @@ class Comment(models.Model):
         related_name="replies",
     )
 
+    class Meta:
+        ordering = ["created_at"]
+
     def __str__(self):
         return f"{self.user.school_id} on {self.note.title}"
 
@@ -184,9 +187,6 @@ class CommentReport(models.Model):
 
     class Meta:
         unique_together = ("comment", "reported_by")
-
-    def __str__(self):
-        return f"Report by {self.reported_by.school_id} on comment {self.comment.id}"
 
 
 # --------------------
@@ -214,18 +214,19 @@ class NoteAction(models.Model):
     reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.note.title} - {self.action}"
 
+# --------------------
+# Like & Save Models
+# --------------------
 class NoteLike(models.Model):
     note = models.ForeignKey(
-        "Note",
+        Note,
         on_delete=models.CASCADE,
-        related_name="likes"
+        related_name="likes",
     )
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -235,13 +236,13 @@ class NoteLike(models.Model):
 
 class NoteSave(models.Model):
     note = models.ForeignKey(
-        "Note",
+        Note,
         on_delete=models.CASCADE,
-        related_name="saves"
+        related_name="saves",
     )
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

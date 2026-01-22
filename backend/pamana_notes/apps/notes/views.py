@@ -17,6 +17,9 @@ from django.core.mail import send_mail
 from django.http import HttpResponseForbidden
 from django.db.models import Count
 from django.db.models import Prefetch
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from apps.accounts.forms import CustomUserCreationForm
 from apps.subjects.models import Course
@@ -432,3 +435,21 @@ def my_notes(request):
         "notes": notes
     })
 
+
+class ToggleLikeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, note_id):
+        note = Note.objects.get(id=note_id)
+
+        if request.user in note.likes.all():
+            note.likes.remove(request.user)
+            liked = False
+        else:
+            note.likes.add(request.user)
+            liked = True
+
+        return Response({
+            "liked": liked,
+            "likes_count": note.likes.count()
+        })

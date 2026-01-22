@@ -11,6 +11,8 @@ from .student_saved import StudentSavedNotesAPIView
 
 # admin
 from .views import (
+    CommentDeleteAPIView,
+    NoteCommentsAPIView,
     PendingNotesAPIView,
     ModeratedNotesAPIView,
     AdminDashboardAPIView,
@@ -40,6 +42,8 @@ urlpatterns = [
     path("student/my-notes/", StudentMyNotesAPIView.as_view()),
     path("student/upload/", StudentUploadAPIView.as_view()),
     path("student/saved/", StudentSavedNotesAPIView.as_view()),
+    path("notes/<int:note_id>/comments/", NoteCommentsAPIView.as_view()),
+    path("comments/<int:pk>/", CommentDeleteAPIView.as_view()),
 
     path("notes/<int:pk>/", NoteDetailAPIView.as_view(), name="note-detail"),
     path("notes/<int:pk>/like/", ToggleLikeAPIView.as_view()),
