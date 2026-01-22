@@ -15,19 +15,26 @@ import { useNavigate } from "react-router-dom";
 
 const NoteDetailModal = ({ open, onClose, note, token }) => {
   const navigate = useNavigate();
+
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
 
+  // 🔹 LOAD COMMENTS SAFELY
   useEffect(() => {
-    if (open && token && note) {
-      axios
-        .get(`http://127.0.0.1:8000/notes/api/notes/${note.id}/comments/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((res) => setComments(res.data));
-    }
+    if (!open || !note || !token) return;
+
+    axios
+      .get(
+        `http://127.0.0.1:8000/notes/api/notes/${note.id}/comments/`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .then((res) => {
+        // ✅ FIX: extract array properly
+        setComments(res.data.comments || []);
+      })
+      .catch(() => setComments([]));
   }, [open, note, token]);
 
   if (!note) return null;
@@ -101,20 +108,26 @@ const NoteDetailModal = ({ open, onClose, note, token }) => {
           <Typography fontWeight="bold">Comments</Typography>
 
           {token && (
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Write a comment..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              sx={{ mt: 1, mb: 1 }}
-            />
+            <>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Write a comment..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                sx={{ mt: 1, mb: 1 }}
+              />
+
+              <Button size="small" onClick={submitComment}>
+                Post
+              </Button>
+            </>
           )}
 
-          {token && (
-            <Button size="small" onClick={submitComment}>
-              Post
-            </Button>
+          {comments.length === 0 && (
+            <Typography variant="caption" color="text.secondary">
+              No comments yet.
+            </Typography>
           )}
 
           {comments.map((c) => (

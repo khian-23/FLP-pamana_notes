@@ -37,7 +37,16 @@ const Home = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const data = await apiFetch("/api/notes/public/");
+        let data;
+
+        try {
+          // 🔑 Try student feed first
+          data = await apiFetch("/api/notes/student/dashboard/");
+        } catch {
+          // 🌍 Fallback to public feed
+          data = await apiFetch("/api/notes/public/");
+        }
+
         setNotes(data.notes || []);
         setFilteredNotes(data.notes || []);
       } catch (err) {
@@ -50,6 +59,7 @@ const Home = () => {
 
     fetchNotes();
   }, []);
+
 
   // 🔍 SEARCH FILTER
   useEffect(() => {

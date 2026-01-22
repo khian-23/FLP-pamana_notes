@@ -38,8 +38,12 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* ✅ THIS FIXES THE BLANK PAGE */}
-          <Route index element={<Dashboard />} />
+          {/* 🔑 HOME = NOTES FEED (WITH MODAL) */}
+          <Route index element={<Home />} />
+          <Route path="home" element={<Home />} />
+
+          {/* 📊 DASHBOARD = STATS ONLY */}
+          <Route path="dashboard" element={<Dashboard />} />
 
           <Route path="notes/:id" element={<NoteDetail />} />
           <Route path="my-notes" element={<MyNotes />} />
@@ -47,9 +51,6 @@ function App() {
           <Route path="bookmarks" element={<Bookmarks />} />
           <Route path="freedom-wall" element={<FreedomWall />} />
           <Route path="profile" element={<Profile />} />
-
-          {/* safety redirect */}
-          <Route path="home" element={<Navigate to="/app" replace />} />
         </Route>
 
         {/* ================= ADMIN ================= */}
