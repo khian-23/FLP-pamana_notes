@@ -17,7 +17,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const menu = [
-  { label: "Home", icon: <HomeIcon />, path: "/app" },
+  { label: "Home", icon: <HomeIcon />, path: "/app/home" },
   { label: "My Notes", icon: <DescriptionIcon />, path: "/app/my-notes" },
   { label: "Upload Note", icon: <UploadIcon />, path: "/app/upload" },
   { label: "Saved Notes", icon: <BookmarkIcon />, path: "/app/bookmarks" },
@@ -51,7 +51,7 @@ export default function StudentSidebar({ onNavigate }) {
         {menu.map((item) => (
           <ListItemButton
             key={item.path}
-            selected={location.pathname === item.path}
+            selected={location.pathname.startsWith(item.path)} // ✅ FIX
             onClick={() => {
               navigate(item.path);
               onNavigate && onNavigate();

@@ -15,7 +15,7 @@ import BSIT from "./assets/bsit-logo.png";
 import BSAB from "./assets/bsab-logo.png";
 import BSHM from "./assets/bshm-logo.png";
 import BSED from "./assets/bsed-beed-logo.png";
-
+import { getAccessToken } from "../services/auth";
 export default function LandingPage() {
   const navigate = useNavigate();
 
@@ -93,10 +93,7 @@ export default function LandingPage() {
                       bgcolor: "#e8f5e9",
                     },
                   }}
-                  onClick={() => {
-                    const token = localStorage.getItem("access");
-                    navigate(token ? "/app/home" : "/home");
-                  }}
+                  onClick={() => navigate("/home")}
                 >
                   Get Started
                 </Button>

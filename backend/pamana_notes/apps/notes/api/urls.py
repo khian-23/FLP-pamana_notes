@@ -3,7 +3,7 @@ from django.urls import path
 # dashboards / views
 from .student_dashboard import StudentDashboardAPIView
 from .student_my_notes import StudentMyNotesAPIView
-from .student_upload import StudentUploadNoteAPIView
+from .student_upload import StudentUploadAPIView
 from .subjects_list import SubjectListAPIView
 from .public_notes import PublicNotesAPIView
 from .note_detail import NoteDetailAPIView
@@ -37,7 +37,7 @@ urlpatterns = [
     # =======================
     path("student/dashboard/", StudentDashboardAPIView.as_view()),
     path("student/my-notes/", StudentMyNotesAPIView.as_view()),
-    path("student/upload/", StudentUploadNoteAPIView.as_view()),
+    path("student/upload/", StudentUploadAPIView.as_view()),
 
     path("notes/<int:pk>/", NoteDetailAPIView.as_view(), name="note-detail"),
     path("notes/<int:pk>/like/", ToggleLikeAPIView.as_view()),

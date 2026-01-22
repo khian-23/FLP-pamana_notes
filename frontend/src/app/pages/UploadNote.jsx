@@ -29,7 +29,7 @@ const UploadNote = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // ✅ FETCH FILTERED SUBJECTS (GENERAL + USER COURSE MAJORS)
+  // ✅ FETCH FILTERED SUBJECTS
   useEffect(() => {
     const token = localStorage.getItem("access");
 
@@ -40,6 +40,13 @@ const UploadNote = () => {
       .then((res) => setSubjects(res.data))
       .catch(() => setSubjects([]));
   }, []);
+
+  // 🔒 AUTO-DISABLE COURSE VISIBILITY FOR GENERAL SUBJECTS
+  useEffect(() => {
+    if (form.subject?.type === "General" && form.visibility === "course") {
+      setForm((prev) => ({ ...prev, visibility: "school" }));
+    }
+  }, [form.subject, form.visibility]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,8 +96,10 @@ const UploadNote = () => {
       });
 
       setTimeout(() => navigate("/app/my-notes"), 800);
-    } catch {
-      setError("Upload failed");
+    } catch (err) {
+      setError(
+        err?.response?.data?.detail || "Upload failed"
+      );
     }
   };
 
@@ -132,20 +141,14 @@ const UploadNote = () => {
           }
         />
 
-        {/* ✅ SUBJECT SELECTION (FILTERED) */}
         <Autocomplete
           options={subjects}
-          getOptionLabel={(opt) =>
-            `${opt.name} (${opt.type})`
+          getOptionLabel={(opt) => `${opt.name} (${opt.type})`}
+          onChange={(_, value) =>
+            setForm({ ...form, subject: value })
           }
-          onChange={(_, value) => setForm({ ...form, subject: value })}
           renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Subject"
-              required
-              sx={{ mb: 2 }}
-            />
+            <TextField {...params} label="Subject" required sx={{ mb: 2 }} />
           )}
         />
 
@@ -161,7 +164,13 @@ const UploadNote = () => {
         >
           <MenuItem value="public">Public</MenuItem>
           <MenuItem value="school">School</MenuItem>
-          <MenuItem value="course">Course</MenuItem>
+
+          <MenuItem
+            value="course"
+            disabled={form.subject?.type === "General"}
+          >
+            Course
+          </MenuItem>
         </TextField>
 
         <Button variant="outlined" component="label" sx={{ mb: 2 }}>

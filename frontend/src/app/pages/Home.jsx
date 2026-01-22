@@ -15,7 +15,6 @@ import NoteDetailModal from "./NoteDetailModal";
 import { apiFetch } from "../../services/api";
 import { getAccessToken } from "../../services/auth";
 
-
 const visibilityColor = {
   public: "success",
   school: "info",
@@ -23,7 +22,7 @@ const visibilityColor = {
 };
 
 const Home = () => {
-  const token = getAccessToken();
+  const token = getAccessToken(); // only for modal actions, NOT for fetching
 
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -34,14 +33,11 @@ const Home = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailNote, setDetailNote] = useState(null);
 
-  // ✅ FETCH NOTES (AUTH-AWARE)
+  // ✅ ALWAYS PUBLIC NOTES
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const data = token
-          ? await apiFetch("/api/notes/student/dashboard/")
-          : await apiFetch("/api/notes/public/");
-
+        const data = await apiFetch("/api/notes/public/");
         setNotes(data.notes || []);
         setFilteredNotes(data.notes || []);
       } catch (err) {
@@ -53,7 +49,7 @@ const Home = () => {
     };
 
     fetchNotes();
-  }, [token]);
+  }, []);
 
   // 🔍 SEARCH FILTER
   useEffect(() => {
@@ -85,7 +81,7 @@ const Home = () => {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 2 }}>
-        {token ? "Latest Notes" : "Public Notes"}
+        Public Notes
       </Typography>
 
       <TextField

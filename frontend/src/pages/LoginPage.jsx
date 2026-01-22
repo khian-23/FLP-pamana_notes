@@ -42,7 +42,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await login(school_id, password);
-      navigate(isAdmin() ? "/admin" : "/app");
+      navigate(isAdmin() ? "/admin" : "/app/home");
     } catch {
       alert("Invalid credentials");
     }
@@ -73,7 +73,7 @@ export default function LoginPage() {
     // 🔑 AUTO LOGIN AFTER REGISTER
     try {
       await login(school_id, password);
-      navigate("/app");
+      navigate("/app/home");
     } catch {
       alert("Account created, please log in.");
       setMode("login");
