@@ -14,6 +14,15 @@ class AdminNoteSerializer(serializers.ModelSerializer):
         source="saves.count", read_only=True
     )
 
+    # ✅ THIS WAS MISSING
+    is_saved = serializers.SerializerMethodField()
+
+    def get_is_saved(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.saves.filter(id=request.user.id).exists()
+
     class Meta:
         model = Note
         fields = [
@@ -27,6 +36,7 @@ class AdminNoteSerializer(serializers.ModelSerializer):
             "uploaded_at",
             "likes_count",
             "saves_count",
+            "is_saved",  # ✅ now valid
         ]
 
 
