@@ -21,7 +21,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-from apps.accounts.forms import CustomUserCreationForm
 from apps.subjects.models import Course
 from .models import Note, Bookmark, Rating, Comment
 from .forms import NoteForm, CommentForm

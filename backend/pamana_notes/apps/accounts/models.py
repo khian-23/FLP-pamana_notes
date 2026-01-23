@@ -11,23 +11,34 @@ from apps.subjects.models import Course
 class CustomUserManager(BaseUserManager):
     use_in_migrations = True
 
+    # ======================================================
+    # CREATE STUDENT USER
+    # ======================================================
     def create_user(self, school_id, email=None, password=None, **extra_fields):
         if not school_id:
             raise ValueError("The School ID must be set")
         if not email:
             raise ValueError("Email must be set")
-        if not extra_fields.get("first_name"):
-            raise ValueError("First name must be set")
-        if not extra_fields.get("last_name"):
-            raise ValueError("Last name must be set")
-        if not extra_fields.get("course"):
-            raise ValueError("Course must be set")
 
-        course = extra_fields.pop("course")
+        role = extra_fields.get("role", CustomUser.Role.STUDENT)
 
-        # 🔒 FIX: Convert course ID → Course instance if needed
-        if isinstance(course, (int, str)):
-            course = Course.objects.get(pk=course)
+        # 🔒 STUDENT-ONLY VALIDATION
+        if role == CustomUser.Role.STUDENT:
+            if not extra_fields.get("first_name"):
+                raise ValueError("First name must be set")
+            if not extra_fields.get("last_name"):
+                raise ValueError("Last name must be set")
+            if not extra_fields.get("course"):
+                raise ValueError("Course must be set")
+
+            course = extra_fields.pop("course")
+            if isinstance(course, (int, str)):
+                course = Course.objects.get(pk=course)
+        else:
+            # 🔑 ADMIN / SUPERUSER
+            course = None
+            extra_fields.setdefault("first_name", "")
+            extra_fields.setdefault("last_name", "")
 
         email = self.normalize_email(email)
 
@@ -35,12 +46,15 @@ class CustomUserManager(BaseUserManager):
             school_id=school_id.strip(),
             email=email,
             course=course,
-            **extra_fields
+            **extra_fields,
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
+    # ======================================================
+    # CREATE SUPERUSER (ID + EMAIL + PASSWORD ONLY)
+    # ======================================================
     def create_superuser(self, school_id, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -51,7 +65,12 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self.create_user(school_id, email, password, **extra_fields)
+        return self.create_user(
+            school_id=school_id,
+            email=email,
+            password=password,
+            **extra_fields,
+        )
 
 
 class CustomUser(AbstractUser):
@@ -61,38 +80,40 @@ class CustomUser(AbstractUser):
 
     username = None
 
+    # 🔑 USED AS LOGIN ID (ADMIN OR STUDENT)
     school_id = models.CharField(
         max_length=20,
         unique=True,
-        db_index=True
+        db_index=True,
     )
 
     email = models.EmailField(unique=True)
 
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
 
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
         null=True,
-        related_name="students"
+        blank=True,
+        related_name="students",
     )
 
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
-        default=Role.STUDENT
+        default=Role.STUDENT,
     )
 
     saved_notes = models.ManyToManyField(
         "notes.Note",
         blank=True,
-        related_name="saved_by"
+        related_name="saved_by",
     )
 
     USERNAME_FIELD = "school_id"
-    REQUIRED_FIELDS = ["email", "first_name", "last_name", "course"]
+    REQUIRED_FIELDS = ["email"]  # 🔑 ONLY FOR SUPERUSER PROMPT
 
     objects = CustomUserManager()
 
@@ -114,13 +135,13 @@ class Profile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="profile"
+        related_name="profile",
     )
 
     avatar = models.ImageField(
         upload_to="profiles/",
         blank=True,
-        null=True
+        null=True,
     )
 
     bio = models.TextField(blank=True)
