@@ -14,6 +14,7 @@ import {
 import NoteDetailModal from "./NoteDetailModal";
 import { apiFetch } from "../../services/api";
 import { getAccessToken } from "../../services/auth";
+import { useOutletContext } from "react-router-dom";
 
 const visibilityColor = {
   public: "success",
@@ -21,8 +22,9 @@ const visibilityColor = {
   course: "secondary",
 };
 
-const Home = () => {
-  const token = getAccessToken(); // only for modal actions, NOT for fetching
+export default function Home() {
+  const token = getAccessToken();
+  const { setSavedVersion } = useOutletContext();
 
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -33,42 +35,33 @@ const Home = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailNote, setDetailNote] = useState(null);
 
-  // ✅ ALWAYS PUBLIC NOTES
   useEffect(() => {
     const fetchNotes = async () => {
       try {
         let data;
-
         try {
-          // 🔑 Try student feed first
           data = await apiFetch("/api/notes/student/dashboard/");
         } catch {
-          // 🌍 Fallback to public feed
           data = await apiFetch("/api/notes/public/");
         }
-
         setNotes(data.notes || []);
         setFilteredNotes(data.notes || []);
-      } catch (err) {
-        console.error(err);
+      } catch {
         setError("Failed to load notes.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchNotes();
   }, []);
 
-
-  // 🔍 SEARCH FILTER
   useEffect(() => {
     const q = search.toLowerCase();
     setFilteredNotes(
       notes.filter(
         (n) =>
           n.title.toLowerCase().includes(q) ||
-          (n.subject && n.subject.toLowerCase().includes(q))
+          n.subject?.toLowerCase().includes(q)
       )
     );
   }, [search, notes]);
@@ -78,20 +71,28 @@ const Home = () => {
     setDetailOpen(true);
   };
 
-  if (loading) {
+  const handleSaved = (noteId, saved) => {
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.id === noteId ? { ...n, is_saved: saved } : n
+      )
+    );
+    setSavedVersion((v) => v + 1);
+  };
+
+  if (loading)
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
         <CircularProgress />
       </Box>
     );
-  }
 
   if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 2 }}>
-        Public Notes
+        Notes Feed
       </Typography>
 
       <TextField
@@ -105,43 +106,47 @@ const Home = () => {
       {!filteredNotes.length && <Typography>No notes found.</Typography>}
 
       <Grid container spacing={2}>
-        {filteredNotes.map((note) => {
-          const visibility = note.visibility || "public";
+        {filteredNotes.map((note) => (
+          <Grid xs={12} sm={6} md={4} key={note.id}>
+            <Card
+              sx={{
+                height: "100%",
+                transition: "0.2s",
+                "&:hover": { boxShadow: 6, transform: "translateY(-2px)" },
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" noWrap>
+                  {note.title}
+                </Typography>
 
-          return (
-            <Grid item xs={12} sm={6} md={4} key={note.id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">{note.title}</Typography>
+                <Chip
+                  label={note.visibility.toUpperCase()}
+                  size="small"
+                  color={visibilityColor[note.visibility]}
+                  sx={{ mt: 1, mb: 1 }}
+                />
 
-                  <Chip
-                    label={visibility.toUpperCase()}
-                    color={visibilityColor[visibility] || "default"}
-                    size="small"
-                    sx={{ mt: 1, mb: 1 }}
-                  />
+                <Typography variant="body2">
+                  Subject: {note.subject}
+                </Typography>
 
-                  <Typography variant="body2">
-                    Subject: {note.subject}
-                  </Typography>
+                <Typography variant="caption" display="block">
+                  Uploaded by {note.author_school_id}
+                </Typography>
 
-                  <Typography variant="caption" display="block">
-                    Uploaded by: {note.author_school_id}
-                  </Typography>
-
-                  <Button
-                    size="small"
-                    sx={{ mt: 2 }}
-                    variant="outlined"
-                    onClick={() => openDetails(note)}
-                  >
-                    View
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  sx={{ mt: 2 }}
+                  onClick={() => openDetails(note)}
+                >
+                  View
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
 
       <NoteDetailModal
@@ -149,9 +154,8 @@ const Home = () => {
         onClose={() => setDetailOpen(false)}
         note={detailNote}
         token={token}
+        onSaved={handleSaved}
       />
     </Box>
   );
-};
-
-export default Home;
+}

@@ -9,31 +9,35 @@ from apps.notes.models import Note
 from apps.notes.api.serializers import AdminNoteSerializer
 
 
-class NoteDetailAPIView(APIView):
+class StudentNoteUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
-
-    def get(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
-        return Response(
-            AdminNoteSerializer(note, context={"request": request}).data
-        )
 
     def patch(self, request, pk):
         note = get_object_or_404(Note, pk=pk)
 
+        # 🔐 Only owner can edit
         if note.uploader != request.user:
             return Response(
-                {"detail": "Not allowed"},
+                {"detail": "You do not own this note."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # 🚫 Approved notes are LOCKED
+        if note.is_approved:
+            return Response(
+                {"detail": "Approved notes can no longer be edited."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # ✏️ Apply updates
         note.title = request.data.get("title", note.title)
         note.description = request.data.get("description", note.description)
 
         if "file" in request.FILES:
             note.file = request.FILES["file"]
 
+        # 🔄 Reset moderation state
         note.is_approved = False
         note.is_rejected = False
         note.rejection_reason = ""

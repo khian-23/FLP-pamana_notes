@@ -15,7 +15,7 @@ import Home from "./app/pages/Home";       // public notes feed
 import Dashboard from "./app/pages/Dashboard";
 import MyNotes from "./app/pages/MyNotes";
 import UploadNote from "./app/pages/UploadNote";
-import Bookmarks from "./app/pages/Bookmarks";
+import SavedNotes from "./app/pages/SavedNotes";
 import FreedomWall from "./app/pages/FreedomWall";
 import Profile from "./app/pages/Profile";
 
@@ -48,7 +48,7 @@ function App() {
           <Route path="notes/:id" element={<NoteDetail />} />
           <Route path="my-notes" element={<MyNotes />} />
           <Route path="upload" element={<UploadNote />} />
-          <Route path="bookmarks" element={<Bookmarks />} />
+          <Route path="bookmarks" element={<SavedNotes />} />
           <Route path="freedom-wall" element={<FreedomWall />} />
           <Route path="profile" element={<Profile />} />
         </Route>

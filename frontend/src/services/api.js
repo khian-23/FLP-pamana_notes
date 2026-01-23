@@ -6,12 +6,19 @@ export async function apiFetch(url, options = {}) {
   let token = getAccessToken();
 
   const headers = {
-    "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
     ...(options.headers || {}),
   };
 
-  let response = await fetch(`${API_BASE}${url}`, { ...options, headers });
+  // 🔥 DO NOT set Content-Type when using FormData
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  let response = await fetch(`${API_BASE}${url}`, {
+    ...options,
+    headers,
+  });
 
   if (response.status === 401) {
     const refreshed = await refreshAccessToken();
@@ -22,7 +29,11 @@ export async function apiFetch(url, options = {}) {
 
     token = getAccessToken();
     headers.Authorization = `Bearer ${token}`;
-    response = await fetch(`${API_BASE}${url}`, { ...options, headers });
+
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers,
+    });
   }
 
   if (!response.ok) {

@@ -8,11 +8,16 @@ import StudentTopbar from "./StudentTopbar";
 export default function StudentLayout() {
   const isMobile = useMediaQuery("(max-width:900px)");
   const [open, setOpen] = useState(false);
+  const [savedVersion, setSavedVersion] = useState(0);
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7f6" }}>
       {isMobile ? (
-        <Drawer open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: 260 } }}>
+        <Drawer
+          open={open}
+          onClose={() => setOpen(false)}
+          PaperProps={{ sx: { width: 260 } }}
+        >
           <StudentSidebar onNavigate={() => setOpen(false)} />
         </Drawer>
       ) : (
@@ -22,7 +27,7 @@ export default function StudentLayout() {
       <Box sx={{ flexGrow: 1 }}>
         <StudentTopbar onMenuClick={() => setOpen(true)} />
         <Box sx={{ p: { xs: 2, md: 3 } }}>
-          <Outlet />
+          <Outlet context={{ savedVersion, setSavedVersion }} />
         </Box>
       </Box>
     </Box>
