@@ -10,6 +10,10 @@ class AdminNoteSerializer(serializers.ModelSerializer):
     author_school_id = serializers.CharField(
         source="uploader.school_id", read_only=True
     )
+    author_role = serializers.CharField(              # ✅ ADD
+        source="uploader.role", read_only=True
+    )
+
     likes_count = serializers.IntegerField(
         source="likes.count", read_only=True
     )
@@ -18,7 +22,7 @@ class AdminNoteSerializer(serializers.ModelSerializer):
     )
 
     is_saved = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()  # ✅ REQUIRED
+    status = serializers.SerializerMethodField()
 
     def get_is_saved(self, obj):
         request = self.context.get("request")
@@ -43,6 +47,7 @@ class AdminNoteSerializer(serializers.ModelSerializer):
             "subject",
             "visibility",
             "author_school_id",
+            "author_role",          # ✅ ADD
             "uploaded_at",
             "likes_count",
             "saves_count",

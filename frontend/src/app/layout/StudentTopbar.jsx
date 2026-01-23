@@ -4,13 +4,17 @@ import {
   Typography,
   Button,
   IconButton,
+  Chip,
+  Box,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../services/auth";
+import { logout, getUserRole, getUserCourse } from "../../services/auth";
 
 export default function StudentTopbar({ onMenuClick }) {
   const navigate = useNavigate();
+  const role = getUserRole();
+  const course = getUserCourse();
 
   const handleLogout = () => {
     logout();
@@ -28,17 +32,38 @@ export default function StudentTopbar({ onMenuClick }) {
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between" }}>
-        <IconButton
-          edge="start"
-          onClick={onMenuClick}
-          sx={{ display: { md: "none" } }}
-        >
-          <MenuIcon />
-        </IconButton>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <IconButton
+            edge="start"
+            onClick={onMenuClick}
+            sx={{ display: { md: "none" } }}
+          >
+            <MenuIcon />
+          </IconButton>
 
-        <Typography fontWeight="bold">
-          Pamana Notes
-        </Typography>
+          <Typography fontWeight="bold">
+            Pamana Notes
+          </Typography>
+
+          {role === "moderator" && (
+            <>
+              <Chip
+                label="Moderator"
+                size="small"
+                color="success"
+                variant="outlined"
+              />
+              {course && (
+                <Chip
+                  label={course}
+                  size="small"
+                  color="default"
+                  variant="outlined"
+                />
+              )}
+            </>
+          )}
+        </Box>
 
         <Button
           variant="outlined"

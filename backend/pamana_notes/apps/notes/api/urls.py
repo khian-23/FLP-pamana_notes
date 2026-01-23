@@ -18,7 +18,6 @@ from .views import (
     AdminDashboardAPIView,
     approve_note,
     reject_note,
-
 )
 
 from .note_actions import (
@@ -28,11 +27,15 @@ from .note_actions import (
 )
 
 urlpatterns = [
+    # =====================
     # PUBLIC
+    # =====================
     path("public/", PublicNotesAPIView.as_view()),
     path("subjects/", SubjectListAPIView.as_view()),
 
+    # =====================
     # STUDENT
+    # =====================
     path("student/dashboard/", StudentDashboardAPIView.as_view()),
     path("student/my-notes/", StudentMyNotesAPIView.as_view()),
     path("student/upload/", StudentUploadAPIView.as_view()),
@@ -47,15 +50,20 @@ urlpatterns = [
     path("notes/<int:pk>/save/", ToggleSaveAPIView.as_view()),
     path("notes/<int:pk>/comments/", CommentAPIView.as_view()),
 
-    # ADMIN
+    # =====================
+    # REVIEWER (ADMIN + MODERATOR)
+    # =====================
     path("pending/", PendingNotesAPIView.as_view()),
     path("moderated/", ModeratedNotesAPIView.as_view()),
     path("approve/<int:pk>/", approve_note),
     path("reject/<int:pk>/", reject_note),
+
+    # =====================
+    # ADMIN ONLY
+    # =====================
     path(
         "admin/dashboard/",
         AdminDashboardStatsAPIView.as_view(),
         name="admin-dashboard-stats",
     ),
-    
 ]

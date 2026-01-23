@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 # =========================
-# JWT SERIALIZER (UNCHANGED)
+# JWT SERIALIZER
 # =========================
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -16,6 +16,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         token["school_id"] = user.school_id
+        token["role"] = user.role
+        token["course"] = user.course.name if user.course else None  # ✅ ADD THIS
         token["is_staff"] = user.is_staff
         token["is_superuser"] = user.is_superuser
 
@@ -23,11 +25,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 # =========================
-# ADMIN USER SERIALIZER
+# ADMIN / MODERATOR USER SERIALIZER
 # =========================
 class AdminUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
-    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -46,13 +47,6 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if obj.first_name or obj.last_name:
             return f"{obj.first_name} {obj.last_name}".strip()
         return obj.school_id
-
-    def get_role(self, obj):
-        if obj.is_superuser:
-            return "admin"
-        if obj.is_staff:
-            return "moderator"
-        return "student"
 
 
 # =========================
@@ -99,7 +93,11 @@ class StudentProfileUpdateSerializer(serializers.ModelSerializer):
         source="user.last_name",
         required=False
     )
-    email = serializers.EmailField(source="user.email", required=False)
+    email = serializers.EmailField(
+        source="user.email",
+        required=False
+    )
+
     class Meta:
         model = Profile
         fields = [
@@ -113,17 +111,16 @@ class StudentProfileUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", {})
 
-        # Update user fields
         for attr, value in user_data.items():
             setattr(instance.user, attr, value)
         instance.user.save()
 
-        # Update profile fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         return instance
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:

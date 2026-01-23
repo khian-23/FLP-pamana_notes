@@ -8,9 +8,11 @@ import {
   Divider,
 } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
+import { getUserRole } from "../../services/auth";
 
 const AdminSidebar = ({ onNavigate }) => {
   const location = useLocation();
+  const role = getUserRole();
 
   const navItem = (to, label) => (
     <ListItemButton
@@ -28,23 +30,32 @@ const AdminSidebar = ({ onNavigate }) => {
     </ListItemButton>
   );
 
+  const isAdmin = role === "admin";
+  const isModerator = role === "moderator";
+
   return (
     <Box sx={{ width: 240 }}>
       <Toolbar>
         <Typography variant="h6" noWrap>
-          Admin Panel
+          {isAdmin ? "Admin Panel" : "Moderator Panel"}
         </Typography>
       </Toolbar>
 
       <Divider />
 
       <List sx={{ px: 1 }}>
-        {navItem("/admin", "Dashboard")}
-        {navItem("/admin/notes", "Pending Notes")}
-        {navItem("/admin/moderated-notes", "Moderated Notes")}
-        {navItem("/admin/users", "Users")}
-        {navItem("/admin/reports", "Reports")}
-        {navItem("/admin/settings", "Settings")}
+        {/* ADMIN ONLY */}
+        {isAdmin && navItem("/admin", "Dashboard")}
+
+        {/* REVIEWER (ADMIN + MODERATOR) */}
+        {(isAdmin || isModerator) && navItem("/admin/notes", "Pending Notes")}
+        {(isAdmin || isModerator) &&
+          navItem("/admin/moderated-notes", "Moderated Notes")}
+
+        {/* ADMIN ONLY */}
+        {isAdmin && navItem("/admin/users", "Users")}
+        {isAdmin && navItem("/admin/reports", "Reports")}
+        {isAdmin && navItem("/admin/settings", "Settings")}
       </List>
     </Box>
   );

@@ -1,5 +1,5 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
@@ -8,7 +8,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 
 from apps.notes.models import Note, Comment
@@ -22,17 +22,51 @@ User = get_user_model()
 
 
 # ======================================================
-# ADMIN — PENDING NOTES
+# PERMISSIONS
+# ======================================================
+class IsReviewer(BasePermission):
+    """
+    Reviewer = Admin or Moderator (Faculty)
+    """
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.role in ["admin", "moderator"]
+        )
+
+
+# ======================================================
+# INTERNAL HELPER — COURSE-SCOPED QUERYSET
+# ======================================================
+def reviewer_notes_queryset(user):
+    """
+    Admin  -> all notes
+    Moderator -> own course + general subjects only
+    """
+    qs = Note.objects.filter(is_deleted=False)
+
+    if user.role == "admin":
+        return qs
+
+    # MODERATOR
+    return qs.filter(
+        Q(subject__course=user.course) |
+        Q(subject__is_general=True)
+    )
+
+
+# ======================================================
+# REVIEWER — PENDING NOTES
 # ======================================================
 class PendingNotesAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsReviewer]
 
     def get(self, request):
-        notes = Note.objects.filter(
-            is_deleted=False,
-            is_approved=False,
-            is_rejected=False,
-        ).order_by("-uploaded_at")
+        notes = (
+            reviewer_notes_queryset(request.user)
+            .filter(is_approved=False, is_rejected=False)
+            .order_by("-uploaded_at")
+        )
 
         return Response(
             AdminNoteSerializer(
@@ -42,22 +76,17 @@ class PendingNotesAPIView(APIView):
 
 
 # ======================================================
-# ADMIN — MODERATED NOTES
+# REVIEWER — MODERATED NOTES
 # ======================================================
 class ModeratedNotesAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsReviewer]
 
     def get(self, request):
-        notes = Note.objects.filter(
-            is_deleted=False
-        ).filter(
-            is_approved=True
-        ) | Note.objects.filter(
-            is_deleted=False,
-            is_rejected=True
+        notes = (
+            reviewer_notes_queryset(request.user)
+            .filter(Q(is_approved=True) | Q(is_rejected=True))
+            .order_by("-uploaded_at")
         )
-
-        notes = notes.order_by("-uploaded_at")
 
         return Response(
             AdminNoteSerializer(
@@ -67,7 +96,7 @@ class ModeratedNotesAPIView(APIView):
 
 
 # ======================================================
-# STUDENT — UPDATE NOTE (SYNC-SAFE)
+# STUDENT — UPDATE NOTE
 # ======================================================
 class StudentNoteUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -90,7 +119,6 @@ class StudentNoteUpdateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # 🔁 FORCE re-moderation visibility
         note.is_approved = False
         note.is_rejected = False
         note.rejection_reason = ""
@@ -111,15 +139,14 @@ class StudentNoteUpdateAPIView(APIView):
 
 
 # ======================================================
-# ADMIN — APPROVE / REJECT
+# REVIEWER — APPROVE / REJECT
 # ======================================================
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsReviewer])
 def approve_note(request, pk):
     note = get_object_or_404(
-        Note,
+        reviewer_notes_queryset(request.user),
         pk=pk,
-        is_deleted=False,
     )
 
     note.is_approved = True
@@ -137,18 +164,17 @@ def approve_note(request, pk):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsReviewer])
 def reject_note(request, pk):
     note = get_object_or_404(
-        Note,
+        reviewer_notes_queryset(request.user),
         pk=pk,
-        is_deleted=False,
     )
 
     note.is_approved = False
     note.is_rejected = True
     note.rejection_reason = request.data.get(
-        "reason", "Rejected by admin"
+        "reason", "Rejected by reviewer"
     )
     note.save(
         update_fields=[
@@ -162,12 +188,18 @@ def reject_note(request, pk):
 
 
 # ======================================================
-# ADMIN — DASHBOARD
+# ADMIN ONLY — DASHBOARD
 # ======================================================
 class AdminDashboardAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.user.role != "admin":
+            return Response(
+                {"detail": "Forbidden"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         stats = {
             "total_users": User.objects.count(),
             "total_notes": Note.objects.filter(is_deleted=False).count(),

@@ -24,7 +24,7 @@ class StudentUploadAPIView(APIView):
         file = request.FILES.get("file")
 
         # ============================
-        # VALIDATION
+        # BASIC VALIDATION
         # ============================
         if not title:
             return Response(
@@ -52,13 +52,23 @@ class StudentUploadAPIView(APIView):
             )
 
         # ============================
-        # FILE SIZE ONLY (ANY TYPE)
+        # FILE SIZE
         # ============================
         if file and file.size > MAX_FILE_SIZE:
             return Response(
                 {"file": "File size must be 10MB or less."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # ============================
+        # MODERATOR COURSE RESTRICTION
+        # ============================
+        if user.role == "moderator":
+            if subject.course and subject.course != user.course:
+                return Response(
+                    {"detail": "Moderators can only upload notes for their own course."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         # ============================
         # VISIBILITY RULES

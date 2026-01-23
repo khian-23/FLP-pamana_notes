@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
@@ -6,11 +6,12 @@ import NotFound from "./pages/NotFound";
 import NoteDetail from "./pages/NoteDetail";
 
 import AdminRoutes from "./admin/routes/AdminRoutes";
+import ModeratorRoutes from "./moderator/routes/ModeratorRoutes";
 
 import StudentLayout from "./app/layout/StudentLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-import Home from "./app/pages/Home";       // public notes feed
+import Home from "./app/pages/Home";
 import Dashboard from "./app/pages/Dashboard";
 import MyNotes from "./app/pages/MyNotes";
 import UploadNote from "./app/pages/UploadNote";
@@ -25,25 +26,21 @@ function App() {
 
         {/* ================= PUBLIC ================= */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/home" element={<Home />} />      {/* public dashboard */}
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* ================= STUDENT ================= */}
         <Route
           path="/app/*"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["student"]}>
               <StudentLayout />
             </ProtectedRoute>
           }
         >
-          {/* 🔑 HOME = NOTES FEED (WITH MODAL) */}
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
-
-          {/* 📊 DASHBOARD = STATS ONLY */}
           <Route path="dashboard" element={<Dashboard />} />
-
           <Route path="notes/:id" element={<NoteDetail />} />
           <Route path="my-notes" element={<MyNotes />} />
           <Route path="upload" element={<UploadNote />} />
@@ -52,8 +49,28 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
 
+        {/* ================= MODERATOR (FACULTY) ================= */}
+        <Route
+          path="/moderator/*"
+          element={
+            <ProtectedRoute allowedRoles={["moderator", "admin"]}>
+              <ModeratorRoutes />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route path="/moderator/*" element={<ModeratorRoutes />} />
+
+
         {/* ================= ADMIN ================= */}
-        <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminRoutes />
+            </ProtectedRoute>
+          }
+        />
 
         {/* ================= 404 ================= */}
         <Route path="*" element={<NotFound />} />

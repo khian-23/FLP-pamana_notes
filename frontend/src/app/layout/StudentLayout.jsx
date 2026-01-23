@@ -3,12 +3,18 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
 import StudentSidebar from "./StudentSidebar";
+import ModeratorSidebar from "../../moderator/layout/ModeratorSidebar";
 import StudentTopbar from "./StudentTopbar";
+import { getUserRole } from "../../services/auth";
 
 export default function StudentLayout() {
   const isMobile = useMediaQuery("(max-width:900px)");
   const [open, setOpen] = useState(false);
   const [savedVersion, setSavedVersion] = useState(0);
+
+  const role = getUserRole();
+  const Sidebar =
+    role === "moderator" ? ModeratorSidebar : StudentSidebar;
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7f6" }}>
@@ -18,10 +24,10 @@ export default function StudentLayout() {
           onClose={() => setOpen(false)}
           PaperProps={{ sx: { width: 260 } }}
         >
-          <StudentSidebar onNavigate={() => setOpen(false)} />
+          <Sidebar onNavigate={() => setOpen(false)} />
         </Drawer>
       ) : (
-        <StudentSidebar />
+        <Sidebar />
       )}
 
       <Box sx={{ flexGrow: 1 }}>

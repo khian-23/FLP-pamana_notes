@@ -4,29 +4,30 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Card,
-  CardContent,
-  Grid,
-  Button,
   TextField,
   Chip,
+  Grid,
 } from "@mui/material";
 import { useOutletContext } from "react-router-dom";
 
+import NoteCard from "../components/NoteCard";
 import NoteDetailModal from "./NoteDetailModal";
-import { apiFetch } from "../../services/api";
-import { getAccessToken } from "../../services/auth";
 
-const visibilityColor = {
-  public: "success",
-  school: "info",
-  course: "secondary",
-};
+import {
+  getUserRole,
+  getUserCourse,
+  getAccessToken,
+} from "../../services/auth";
+import { apiFetch } from "../../services/api";
 
 export default function Home() {
   const token = getAccessToken();
 
-  // ✅ SAFE outlet context (prevents crash)
+  const role = getUserRole();
+  const course = getUserCourse();
+  const isModerator = role === "moderator";
+
+  // ✅ SAFE outlet context
   const outletContext = useOutletContext();
   const setSavedVersion = outletContext?.setSavedVersion;
 
@@ -85,7 +86,6 @@ export default function Home() {
       )
     );
 
-    // ✅ only update if context exists
     if (setSavedVersion) {
       setSavedVersion((v) => v + 1);
     }
@@ -103,9 +103,29 @@ export default function Home() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{ mb: 1 }}>
         Notes Feed
       </Typography>
+
+      {/* ===== MODERATOR CONTEXT ===== */}
+      {isModerator && (
+        <Box sx={{ mb: 2 }}>
+          {course && (
+            <Chip
+              label={`Course: ${course}`}
+              size="small"
+              color="info"
+              sx={{ mr: 1 }}
+            />
+          )}
+          <Chip
+            label="Includes General Subjects"
+            size="small"
+            color="success"
+            variant="outlined"
+          />
+        </Box>
+      )}
 
       <TextField
         fullWidth
@@ -115,51 +135,17 @@ export default function Home() {
         sx={{ mb: 3 }}
       />
 
-      {!filteredNotes.length && <Typography>No notes found.</Typography>}
+      {!filteredNotes.length && (
+        <Typography>No notes found.</Typography>
+      )}
 
       <Grid container spacing={2}>
         {filteredNotes.map((note) => (
           <Grid item xs={12} sm={6} md={4} key={note.id}>
-            <Card
-              sx={{
-                height: "100%",
-                transition: "0.2s",
-                "&:hover": {
-                  boxShadow: 6,
-                  transform: "translateY(-2px)",
-                },
-              }}
-            >
-              <CardContent>
-                <Typography variant="h6" noWrap>
-                  {note.title}
-                </Typography>
-
-                <Chip
-                  label={note.visibility.toUpperCase()}
-                  size="small"
-                  color={visibilityColor[note.visibility]}
-                  sx={{ mt: 1, mb: 1 }}
-                />
-
-                <Typography variant="body2">
-                  Subject: {note.subject}
-                </Typography>
-
-                <Typography variant="caption" display="block">
-                  Uploaded by {note.author_school_id}
-                </Typography>
-
-                <Button
-                  size="small"
-                  variant="outlined"
-                  sx={{ mt: 2 }}
-                  onClick={() => openDetails(note)}
-                >
-                  View
-                </Button>
-              </CardContent>
-            </Card>
+            <NoteCard
+              note={note}
+              onView={() => openDetails(note)}
+            />
           </Grid>
         ))}
       </Grid>

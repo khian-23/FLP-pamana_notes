@@ -12,7 +12,7 @@ class CustomUserManager(BaseUserManager):
     use_in_migrations = True
 
     # ======================================================
-    # CREATE STUDENT USER
+    # CREATE USER
     # ======================================================
     def create_user(self, school_id, email=None, password=None, **extra_fields):
         if not school_id:
@@ -22,20 +22,40 @@ class CustomUserManager(BaseUserManager):
 
         role = extra_fields.get("role", CustomUser.Role.STUDENT)
 
-        # 🔒 STUDENT-ONLY VALIDATION
+        # ==================================================
+        # STUDENT VALIDATION
+        # ==================================================
         if role == CustomUser.Role.STUDENT:
             if not extra_fields.get("first_name"):
-                raise ValueError("First name must be set")
+                raise ValueError("First name must be set for students")
             if not extra_fields.get("last_name"):
-                raise ValueError("Last name must be set")
+                raise ValueError("Last name must be set for students")
             if not extra_fields.get("course"):
-                raise ValueError("Course must be set")
+                raise ValueError("Course must be set for students")
 
             course = extra_fields.pop("course")
             if isinstance(course, (int, str)):
                 course = Course.objects.get(pk=course)
-        else:
-            # 🔑 ADMIN / SUPERUSER
+
+        # ==================================================
+        # MODERATOR (FACULTY) VALIDATION
+        # ==================================================
+        elif role == CustomUser.Role.MODERATOR:
+            if not extra_fields.get("first_name"):
+                raise ValueError("First name must be set for moderators")
+            if not extra_fields.get("last_name"):
+                raise ValueError("Last name must be set for moderators")
+            if not extra_fields.get("course"):
+                raise ValueError("Course must be set for moderators")
+
+            course = extra_fields.pop("course")
+            if isinstance(course, (int, str)):
+                course = Course.objects.get(pk=course)
+
+        # ==================================================
+        # ADMIN VALIDATION
+        # ==================================================
+        else:  # ADMIN
             course = None
             extra_fields.setdefault("first_name", "")
             extra_fields.setdefault("last_name", "")
@@ -53,7 +73,7 @@ class CustomUserManager(BaseUserManager):
         return user
 
     # ======================================================
-    # CREATE SUPERUSER (ID + EMAIL + PASSWORD ONLY)
+    # CREATE SUPERUSER (ADMIN ONLY)
     # ======================================================
     def create_superuser(self, school_id, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
@@ -76,11 +96,11 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = "student", "Student"
+        MODERATOR = "moderator", "Moderator"
         ADMIN = "admin", "Admin"
 
     username = None
 
-    # 🔑 USED AS LOGIN ID (ADMIN OR STUDENT)
     school_id = models.CharField(
         max_length=20,
         unique=True,
@@ -92,12 +112,13 @@ class CustomUser(AbstractUser):
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
 
+    # 🔑 Used by BOTH students and moderators
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="students",
+        related_name="users",
     )
 
     role = models.CharField(
@@ -113,7 +134,7 @@ class CustomUser(AbstractUser):
     )
 
     USERNAME_FIELD = "school_id"
-    REQUIRED_FIELDS = ["email"]  # 🔑 ONLY FOR SUPERUSER PROMPT
+    REQUIRED_FIELDS = ["email"]
 
     objects = CustomUserManager()
 

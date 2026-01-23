@@ -4,10 +4,11 @@ import {
   isAuthenticated,
   refreshAccessToken,
   logout,
+  getUserRole,
 } from "../services/auth";
 import { CircularProgress, Box } from "@mui/material";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, allowedRoles }) {
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
 
@@ -54,6 +55,15 @@ export default function ProtectedRoute({ children }) {
   // 🔒 Not authenticated → login
   if (!allowed) {
     return <Navigate to="/login" replace />;
+  }
+
+  // 🔐 Role-based guard (OPTIONAL)
+  if (allowedRoles && allowedRoles.length > 0) {
+    const role = getUserRole();
+
+    if (!allowedRoles.includes(role)) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return children;

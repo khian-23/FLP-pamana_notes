@@ -10,7 +10,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-import { login, isAdmin } from "../services/auth";
+import { login, getUserRole } from "../services/auth";
 
 export default function LoginPage() {
   const [mode, setMode] = useState("login");
@@ -38,11 +38,23 @@ export default function LoginPage() {
       .finally(() => setLoadingCourses(false));
   }, [mode]);
 
+  const redirectByRole = () => {
+    const role = getUserRole();
+
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
+    } else if (role === "moderator") {
+      navigate("/moderator/pending", { replace: true });
+    } else {
+      navigate("/app/home", { replace: true });
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await login(school_id, password);
-      navigate(isAdmin() ? "/admin" : "/app/home");
+      redirectByRole();
     } catch {
       alert("Invalid credentials");
     }
@@ -70,10 +82,10 @@ export default function LoginPage() {
       return;
     }
 
-    // 🔑 AUTO LOGIN AFTER REGISTER
+    // 🔑 AUTO LOGIN AFTER REGISTER (STUDENT ONLY)
     try {
       await login(school_id, password);
-      navigate("/app/home");
+      navigate("/app/home", { replace: true });
     } catch {
       alert("Account created, please log in.");
       setMode("login");
@@ -200,11 +212,17 @@ export default function LoginPage() {
 
         <Typography mt={2} textAlign="center">
           {mode === "login" ? (
-            <span onClick={() => setMode("register")} style={{ cursor: "pointer" }}>
+            <span
+              onClick={() => setMode("register")}
+              style={{ cursor: "pointer" }}
+            >
               No account? Register
             </span>
           ) : (
-            <span onClick={() => setMode("login")} style={{ cursor: "pointer" }}>
+            <span
+              onClick={() => setMode("login")}
+              style={{ cursor: "pointer" }}
+            >
               Already have an account? Login
             </span>
           )}

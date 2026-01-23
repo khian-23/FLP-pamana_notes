@@ -1,61 +1,38 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../services/api";
+import { apiFetch } from "../../services/api";
 
-function PendingNotes() {
+export default function ModeratorPendingNotes() {
   const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  async function loadNotes() {
-    try {
-      const data = await apiFetch("/notes/api/pending/");
-      setNotes(data);
-    } catch (err) {
-      console.error("Failed to load pending notes", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => {
+    apiFetch("/notes/api/pending/").then(setNotes);
+  }, []);
 
-  async function approveNote(id) {
+  async function approve(id) {
     await apiFetch(`/notes/api/approve/${id}/`, { method: "POST" });
-    loadNotes();
+    setNotes(notes.filter(n => n.id !== id));
   }
 
-  async function rejectNote(id) {
-    const reason = prompt("Reason for rejection:");
+  async function reject(id) {
+    const reason = prompt("Reason?");
     if (!reason) return;
-
     await apiFetch(`/notes/api/reject/${id}/`, {
       method: "POST",
       body: JSON.stringify({ reason }),
     });
-
-    loadNotes();
+    setNotes(notes.filter(n => n.id !== id));
   }
-
-  useEffect(() => {
-    loadNotes();
-  }, []);
-
-  if (loading) return <p>Loading pending notes…</p>;
-
-  if (!notes.length) return <p>No pending notes.</p>;
 
   return (
     <div>
       <h3>Pending Notes</h3>
-
-      {notes.map((note) => (
-        <div key={note.id} style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-          <strong>{note.title}</strong>
-          <p>{note.description}</p>
-
-          <button onClick={() => approveNote(note.id)}>Approve</button>
-          <button onClick={() => rejectNote(note.id)}>Reject</button>
+      {notes.map(n => (
+        <div key={n.id}>
+          <b>{n.title}</b>
+          <button onClick={() => approve(n.id)}>Approve</button>
+          <button onClick={() => reject(n.id)}>Reject</button>
         </div>
       ))}
     </div>
   );
 }
-
-export default PendingNotes;

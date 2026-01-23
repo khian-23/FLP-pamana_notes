@@ -2,7 +2,9 @@ import { jwtDecode } from "jwt-decode";
 
 const API_BASE = "http://127.0.0.1:8000";
 
-/* TOKENS */
+/* =====================
+   TOKENS
+===================== */
 export function getAccessToken() {
   return localStorage.getItem("access");
 }
@@ -21,7 +23,9 @@ export function logout() {
   localStorage.removeItem("refresh");
 }
 
-/* AUTH */
+/* =====================
+   AUTH
+===================== */
 export async function login(school_id, password) {
   const res = await fetch(`${API_BASE}/accounts/api/auth/token/`, {
     method: "POST",
@@ -34,7 +38,7 @@ export async function login(school_id, password) {
   const data = await res.json();
   setTokens(data);
 
-  return data; // 🔴 THIS WAS MISSING
+  return data;
 }
 
 export function isAuthenticated() {
@@ -49,17 +53,40 @@ export function isAuthenticated() {
   }
 }
 
-export function isAdmin() {
+/* =====================
+   ROLE HELPERS
+===================== */
+export function getUserRole() {
   const token = getAccessToken();
-  if (!token) return false;
+  if (!token) return null;
 
   try {
-    return Boolean(jwtDecode(token)?.is_staff);
+    return jwtDecode(token)?.role || null;
   } catch {
-    return false;
+    return null;
   }
 }
 
+export function getUserCourse() {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  try {
+    return jwtDecode(token)?.course || null;
+  } catch {
+    return null;
+  }
+}
+
+// 🔒 LEGACY
+export function isAdmin() {
+  const role = getUserRole();
+  return role === "admin";
+}
+
+/* =====================
+   TOKEN REFRESH
+===================== */
 export async function refreshAccessToken() {
   const refresh = getRefreshToken();
   if (!refresh) return false;
