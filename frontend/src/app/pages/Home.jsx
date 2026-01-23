@@ -11,10 +11,11 @@ import {
   TextField,
   Chip,
 } from "@mui/material";
+import { useOutletContext } from "react-router-dom";
+
 import NoteDetailModal from "./NoteDetailModal";
 import { apiFetch } from "../../services/api";
 import { getAccessToken } from "../../services/auth";
-import { useOutletContext } from "react-router-dom";
 
 const visibilityColor = {
   public: "success",
@@ -24,7 +25,10 @@ const visibilityColor = {
 
 export default function Home() {
   const token = getAccessToken();
-  const { setSavedVersion } = useOutletContext();
+
+  // ✅ SAFE outlet context (prevents crash)
+  const outletContext = useOutletContext();
+  const setSavedVersion = outletContext?.setSavedVersion;
 
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -44,14 +48,17 @@ export default function Home() {
         } catch {
           data = await apiFetch("/api/notes/public/");
         }
-        setNotes(data.notes || []);
-        setFilteredNotes(data.notes || []);
+
+        const list = data.notes || [];
+        setNotes(list);
+        setFilteredNotes(list);
       } catch {
         setError("Failed to load notes.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchNotes();
   }, []);
 
@@ -77,15 +84,20 @@ export default function Home() {
         n.id === noteId ? { ...n, is_saved: saved } : n
       )
     );
-    setSavedVersion((v) => v + 1);
+
+    // ✅ only update if context exists
+    if (setSavedVersion) {
+      setSavedVersion((v) => v + 1);
+    }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
         <CircularProgress />
       </Box>
     );
+  }
 
   if (error) return <Alert severity="error">{error}</Alert>;
 
@@ -107,12 +119,15 @@ export default function Home() {
 
       <Grid container spacing={2}>
         {filteredNotes.map((note) => (
-          <Grid xs={12} sm={6} md={4} key={note.id}>
+          <Grid item xs={12} sm={6} md={4} key={note.id}>
             <Card
               sx={{
                 height: "100%",
                 transition: "0.2s",
-                "&:hover": { boxShadow: 6, transform: "translateY(-2px)" },
+                "&:hover": {
+                  boxShadow: 6,
+                  transform: "translateY(-2px)",
+                },
               }}
             >
               <CardContent>

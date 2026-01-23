@@ -6,33 +6,30 @@ import Users from "../pages/Users";
 import ModeratedNotes from "../pages/ModeratedNotes";
 import { getAccessToken, isAdmin } from "../../services/auth";
 
-const AdminRoutes = () => {
+export default function AdminRoutes() {
   const token = getAccessToken();
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!isAdmin()) {
-    return <Navigate to="/" replace />;
-  }
+  if (!token) return <Navigate to="/login" replace />;
+  if (!isAdmin()) return <Navigate to="/" replace />;
 
   return (
-    <AdminLayout>
-      <Routes>
-        {/* ✅ INDEX ROUTE */}
+    <Routes>
+      <Route element={<AdminLayout />}>
+        {/* INDEX = /admin */}
         <Route index element={<Dashboard />} />
 
-        {/* ✅ NESTED ROUTES */}
+        {/* /admin/notes */}
         <Route path="notes" element={<PendingNotes />} />
+
+        {/* /admin/users */}
         <Route path="users" element={<Users />} />
+
+        {/* /admin/moderated-notes */}
         <Route path="moderated-notes" element={<ModeratedNotes />} />
 
-        {/* ✅ FALLBACK */}
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
-    </AdminLayout>
+      </Route>
+    </Routes>
   );
-};
-
-export default AdminRoutes;
+}

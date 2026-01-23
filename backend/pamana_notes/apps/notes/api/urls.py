@@ -8,6 +8,7 @@ from .public_notes import PublicNotesAPIView
 from .note_detail import NoteDetailAPIView
 from .student_saved import StudentSavedNotesAPIView
 from .student_update import StudentNoteUpdateAPIView
+from .admin_dashboard import AdminDashboardStatsAPIView
 
 from .views import (
     CommentDeleteAPIView,
@@ -49,8 +50,12 @@ urlpatterns = [
     # ADMIN
     path("pending/", PendingNotesAPIView.as_view()),
     path("moderated/", ModeratedNotesAPIView.as_view()),
-    path("dashboard/", AdminDashboardAPIView.as_view()),
     path("approve/<int:pk>/", approve_note),
     path("reject/<int:pk>/", reject_note),
+    path(
+        "admin/dashboard/",
+        AdminDashboardStatsAPIView.as_view(),
+        name="admin-dashboard-stats",
+    ),
     
 ]

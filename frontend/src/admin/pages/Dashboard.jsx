@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 
 import PeopleIcon from "@mui/icons-material/People";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PendingIcon from "@mui/icons-material/Pending";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -23,15 +29,32 @@ import { fetchDashboardStats } from "../../services/adminApi";
    KPI CARD
 ========================= */
 const StatCard = ({ title, value, icon }) => (
-  <Paper sx={{ p: 2.5, borderRadius: 2 }}>
+  <Paper
+    elevation={0}
+    sx={{
+      p: 2.5,
+      borderRadius: 2,
+      bgcolor: "#0b6623",
+      color: "#fff",
+    }}
+  >
     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
       <Box>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ opacity: 0.9 }}>
           {title}
         </Typography>
-        <Typography variant="h5">{value}</Typography>
+        <Typography variant="h5" fontWeight="bold">
+          {value}
+        </Typography>
       </Box>
-      <Box sx={{ bgcolor: "green.100", p: 1, borderRadius: 1 }}>
+
+      <Box
+        sx={{
+          bgcolor: "rgba(255,255,255,0.15)",
+          p: 1,
+          borderRadius: 1.5,
+        }}
+      >
         {icon}
       </Box>
     </Box>
@@ -41,28 +64,37 @@ const StatCard = ({ title, value, icon }) => (
 /* =========================
    DASHBOARD
 ========================= */
-const Dashboard = () => {
+export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [uploads, setUploads] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardStats()
       .then((data) => {
         setStats(data.stats);
-        setUploads(data.uploads_per_day);
-        setSubjects(data.uploads_by_subject);
+        setUploads(data.uploads_per_day || []);
+        setSubjects(data.uploads_by_subject || []);
       })
-      .catch(console.error);
+      .finally(() => setLoading(false));
   }, []);
 
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   if (!stats) {
-    return <Typography>Loading dashboard…</Typography>;
+    return <Typography>Failed to load dashboard.</Typography>;
   }
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" fontWeight="bold" mb={3}>
         Admin Dashboard
       </Typography>
 
@@ -76,6 +108,7 @@ const Dashboard = () => {
             md: "repeat(5, 1fr)",
           },
           gap: 3,
+          mb: 4,
         }}
       >
         <StatCard title="Total Users" value={stats.total_users} icon={<PeopleIcon />} />
@@ -86,56 +119,53 @@ const Dashboard = () => {
       </Box>
 
       {/* UPLOAD TREND */}
-        <Paper sx={{ mt: 4, p: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Notes Upload Trend
+      <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+        <Typography fontWeight="bold" mb={2}>
+          Notes Upload Trend
+        </Typography>
+
+        {uploads.length < 2 ? (
+          <Typography color="text.secondary">
+            Not enough data to display chart.
           </Typography>
-
-          {uploads.length > 0 && (
-            <Box
-              sx={{
-                width: "100%",
-                height: 320,
-                position: "relative",
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={uploads}>
-                  <XAxis dataKey="day" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Line
-                    dataKey="notes"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          )}
-        </Paper>
-
-
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={uploads}>
+              <XAxis dataKey="day" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Line
+                dataKey="notes"
+                stroke="#0b6623"
+                strokeWidth={3}
+                dot
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </Paper>
 
       {/* UPLOADS BY SUBJECT */}
-      <Paper sx={{ mt: 4, p: 2 }}>
-        <Typography variant="subtitle1" gutterBottom>
+      <Paper sx={{ p: 3, borderRadius: 2 }}>
+        <Typography fontWeight="bold" mb={2}>
           Uploads by Subject
         </Typography>
 
-        <Box sx={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
+        {subjects.length === 0 ? (
+          <Typography color="text.secondary">
+            No subject data available.
+          </Typography>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={subjects}>
               <XAxis dataKey="subject" />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="notes" />
+              <Bar dataKey="notes" fill="#0b6623" />
             </BarChart>
           </ResponsiveContainer>
-        </Box>
+        )}
       </Paper>
     </Box>
   );
-};
-
-export default Dashboard;
+}

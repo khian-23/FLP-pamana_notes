@@ -16,7 +16,7 @@ const AdminSidebar = ({ onNavigate }) => {
     <ListItemButton
       component={Link}
       to={to}
-      selected={location.pathname === to}
+      selected={location.pathname.startsWith(to)}
       onClick={onNavigate}
       sx={{
         borderRadius: 1,

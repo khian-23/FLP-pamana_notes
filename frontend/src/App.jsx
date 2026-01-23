@@ -5,8 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import NoteDetail from "./pages/NoteDetail";
 
-import AdminLayout from "./admin/layout/AdminLayout";
-import AdminGuard from "./components/AdminGuard";
+import AdminRoutes from "./admin/routes/AdminRoutes";
 
 import StudentLayout from "./app/layout/StudentLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -54,14 +53,7 @@ function App() {
         </Route>
 
         {/* ================= ADMIN ================= */}
-        <Route
-          path="/admin/*"
-          element={
-            <AdminGuard>
-              <AdminLayout />
-            </AdminGuard>
-          }
-        />
+        <Route path="/admin/*" element={<AdminRoutes />} />
 
         {/* ================= 404 ================= */}
         <Route path="*" element={<NotFound />} />

@@ -54,9 +54,10 @@ export default function AdminLayout() {
             flexGrow: 1,
             p: { xs: 2, sm: 3 },
             backgroundColor: "#f9fafb",
+            minHeight: "calc(100vh - 64px)", // 🔑 CRITICAL
+            overflow: "auto",               // 🔑 CRITICAL
           }}
         >
-          {/* 👇 THIS FIXES THE BLANK PAGE */}
           <Outlet />
         </Box>
       </Box>
