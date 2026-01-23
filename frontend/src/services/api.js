@@ -41,5 +41,10 @@ export async function apiFetch(url, options = {}) {
     throw new Error(text || response.statusText);
   }
 
+  // ✅ Handle DELETE / 204 No Content correctly
+  if (response.status === 204) {
+    return null;
+  }
+
   return response.json();
 }

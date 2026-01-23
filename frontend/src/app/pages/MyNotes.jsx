@@ -30,6 +30,7 @@ const MyNotes = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchMyNotes();
@@ -47,6 +48,7 @@ const MyNotes = () => {
   }
 
   function startEdit(note) {
+    setError("");
     setEditingId(note.id);
     setTitle(note.title);
     setDescription(note.description || "");
@@ -61,7 +63,11 @@ const MyNotes = () => {
   }
 
   async function saveEdit(noteId) {
+    if (actionLoading) return;
     try {
+      setError("");
+      setActionLoading(true);
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("description", description);
@@ -72,23 +78,46 @@ const MyNotes = () => {
         body: formData,
       });
 
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? {
+                ...n,
+                title,
+                description,
+                is_approved: false,
+                is_rejected: false,
+                rejection_reason: "",
+              }
+            : n
+        )
+      );
+
       cancelEdit();
-      fetchMyNotes();
     } catch (err) {
-      console.error(err);
-      setError("Failed to update note.");
+      setError(err.message || "Failed to update note.");
+    } finally {
+      setActionLoading(false);
     }
   }
 
   async function deleteNote(noteId) {
+    if (actionLoading) return;
     if (!confirm("Delete this note permanently?")) return;
+
     try {
-      await apiFetch(`/api/notes/notes/${noteId}/`, {
+      setError("");
+      setActionLoading(true);
+
+      await apiFetch(`/api/notes/student/notes/${noteId}/`, {
         method: "DELETE",
       });
-      fetchMyNotes();
-    } catch {
-      setError("Failed to delete note.");
+
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (err) {
+      setError(err.message || "Failed to delete note.");
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -147,9 +176,7 @@ const MyNotes = () => {
                         multiline
                         rows={3}
                         value={description}
-                        onChange={(e) =>
-                          setDescription(e.target.value)
-                        }
+                        onChange={(e) => setDescription(e.target.value)}
                       />
 
                       <Button component="label" variant="outlined">
@@ -157,21 +184,21 @@ const MyNotes = () => {
                         <input
                           type="file"
                           hidden
-                          onChange={(e) =>
-                            setFile(e.target.files[0])
-                          }
+                          onChange={(e) => setFile(e.target.files[0])}
                         />
                       </Button>
 
                       <Stack direction="row" spacing={2}>
                         <Button
                           variant="contained"
+                          disabled={actionLoading}
                           onClick={() => saveEdit(note.id)}
                         >
                           Save & Resubmit
                         </Button>
                         <Button
                           variant="outlined"
+                          disabled={actionLoading}
                           onClick={cancelEdit}
                         >
                           Cancel
@@ -180,19 +207,18 @@ const MyNotes = () => {
                     </Stack>
                   ) : (
                     <Stack direction="row" spacing={1} mt={2}>
-                      {!note.is_approved && (
                       <Button
                         size="small"
                         variant="outlined"
-                        disabled={note.status === "approved"}
+                        disabled={actionLoading}
                         onClick={() => startEdit(note)}
                       >
                         Edit
                       </Button>
-                      )}
                       <Button
                         size="small"
                         color="error"
+                        disabled={actionLoading}
                         onClick={() => deleteNote(note.id)}
                       >
                         Delete

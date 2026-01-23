@@ -6,6 +6,8 @@ import {
   Stack,
   TextField,
   Button,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 
 import {
@@ -16,9 +18,11 @@ import {
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // EDIT STATE (CONTROLLED — NEVER UNDEFINED)
+  // EDIT STATE
   const [editMode, setEditMode] = useState(false);
   const [email, setEmail] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
@@ -33,16 +37,11 @@ export default function Profile() {
         const data = await getProfile();
         setProfile(data);
 
-        // ALWAYS SET FALLBACKS
         setEmail(data.email || "");
         setAvatarPreview(
-          data.avatar_url
-            ? `${data.avatar_url}?t=${Date.now()}`
-            : ""
+          data.avatar_url ? `${data.avatar_url}?t=${Date.now()}` : ""
         );
-
-      } catch (err) {
-        console.error(err);
+      } catch {
         setError("Failed to load profile.");
       } finally {
         setLoading(false);
@@ -53,56 +52,81 @@ export default function Profile() {
   }, []);
 
   // ============================
-  // AVATAR PREVIEW
+  // AVATAR PREVIEW (SAFE)
   // ============================
   function handleAvatarChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // revoke old blob URL
+    if (avatarPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
 
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   }
 
   // ============================
-  // SAVE PROFILE
+  // SAVE PROFILE (HARDENED)
   // ============================
   async function handleSave() {
+    if (saving) return;
+    setError("");
+    setSuccess("");
+
+    // basic validation
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return setError("Please enter a valid email address.");
+    }
+
+    const changedEmail = email !== (profile?.email || "");
+    const changedAvatar = Boolean(avatarFile);
+
+    if (!changedEmail && !changedAvatar) {
+      setEditMode(false);
+      return;
+    }
+
     try {
+      setSaving(true);
+
       const formData = new FormData();
-
-      // Backend allows updating email
-      formData.append("email", email || "");
-
-      if (avatarFile) {
-        formData.append("avatar", avatarFile);
-      }
+      if (changedEmail) formData.append("email", email);
+      if (changedAvatar) formData.append("avatar", avatarFile);
 
       const updated = await updateStudentProfile(formData);
 
-      // Sync UI with backend response
       setProfile(updated);
       setEmail(updated.email || "");
       setAvatarPreview(
-          updated.avatar_url
-            ? `${updated.avatar_url}?t=${Date.now()}`
-            : ""
-        );
+        updated.avatar_url ? `${updated.avatar_url}?t=${Date.now()}` : ""
+      );
 
-
-      setEditMode(false);
       setAvatarFile(null);
-    } catch (err) {
-      console.error(err);
+      setEditMode(false);
+      setSuccess("Profile updated successfully.");
+    } catch {
       setError("Failed to update profile.");
+    } finally {
+      setSaving(false);
     }
   }
 
   // ============================
-  // RENDER STATES
+  // RENDER
   // ============================
-  if (loading) return <Typography>Loading profile...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
-  if (!profile) return <Typography>No profile data.</Typography>;
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!profile) {
+    return <Typography>No profile data.</Typography>;
+  }
 
   return (
     <Box>
@@ -110,12 +134,12 @@ export default function Profile() {
         My Profile
       </Typography>
 
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
       <Stack spacing={3} maxWidth={420}>
         {/* Avatar */}
-        <Avatar
-          src={avatarPreview || ""}
-          sx={{ width: 96, height: 96 }}
-        />
+        <Avatar src={avatarPreview || ""} sx={{ width: 96, height: 96 }} />
 
         {editMode && (
           <Button variant="outlined" component="label">
@@ -130,17 +154,13 @@ export default function Profile() {
         )}
 
         {/* School ID */}
-        <TextField
-          label="School ID"
-          value={profile.school_id || ""}
-          disabled
-        />
+        <TextField label="School ID" value={profile.school_id || ""} disabled />
 
-        {/* Email (Editable) */}
+        {/* Email */}
         <TextField
           label="Email"
           value={email}
-          disabled={!editMode}
+          disabled={!editMode || saving}
           onChange={(e) => setEmail(e.target.value)}
         />
 
@@ -158,18 +178,15 @@ export default function Profile() {
           disabled
         />
 
-        {/* ACTION BUTTONS */}
         {!editMode ? (
-          <Button
-            variant="contained"
-            onClick={() => setEditMode(true)}
-          >
+          <Button variant="contained" onClick={() => setEditMode(true)}>
             Edit Profile
           </Button>
         ) : (
           <Stack direction="row" spacing={2}>
             <Button
               variant="contained"
+              disabled={saving}
               onClick={handleSave}
             >
               Save
@@ -177,11 +194,21 @@ export default function Profile() {
 
             <Button
               variant="outlined"
+              disabled={saving}
               onClick={() => {
                 setEditMode(false);
                 setEmail(profile.email || "");
-                setAvatarPreview(profile.avatar_url || "");
+                if (avatarPreview?.startsWith("blob:")) {
+                  URL.revokeObjectURL(avatarPreview);
+                }
+                setAvatarPreview(
+                  profile.avatar_url
+                    ? `${profile.avatar_url}?t=${Date.now()}`
+                    : ""
+                );
                 setAvatarFile(null);
+                setError("");
+                setSuccess("");
               }}
             >
               Cancel

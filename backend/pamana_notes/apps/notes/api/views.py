@@ -29,15 +29,16 @@ class PendingNotesAPIView(APIView):
 
     def get(self, request):
         notes = Note.objects.filter(
+            is_deleted=False,
             is_approved=False,
             is_rejected=False,
-            is_deleted=False,
         ).order_by("-uploaded_at")
 
-        serializer = AdminNoteSerializer(
-            notes, many=True, context={"request": request}
+        return Response(
+            AdminNoteSerializer(
+                notes, many=True, context={"request": request}
+            ).data
         )
-        return Response(serializer.data)
 
 
 # ======================================================
@@ -47,36 +48,32 @@ class ModeratedNotesAPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        notes = (
-            Note.objects.filter(is_deleted=False, is_approved=True)
-            | Note.objects.filter(is_deleted=False, is_rejected=True)
-        ).order_by("-uploaded_at")
-
-        serializer = AdminNoteSerializer(
-            notes, many=True, context={"request": request}
+        notes = Note.objects.filter(
+            is_deleted=False
+        ).filter(
+            is_approved=True
+        ) | Note.objects.filter(
+            is_deleted=False,
+            is_rejected=True
         )
-        return Response(serializer.data)
+
+        notes = notes.order_by("-uploaded_at")
+
+        return Response(
+            AdminNoteSerializer(
+                notes, many=True, context={"request": request}
+            ).data
+        )
 
 
 # ======================================================
-# STUDENT — UPDATE NOTE
+# STUDENT — UPDATE NOTE (SYNC-SAFE)
 # ======================================================
 class StudentNoteUpdateAPIView(APIView):
-    """
-    PATCH / PUT:
-    Update a student's own note.
-    Automatically re-sends for moderation.
-    """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def patch(self, request, pk):
-        return self._update(request, pk)
-
-    def put(self, request, pk):
-        return self._update(request, pk)
-
-    def _update(self, request, pk):
         note = get_object_or_404(
             Note,
             pk=pk,
@@ -93,15 +90,17 @@ class StudentNoteUpdateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # 🔁 Reset moderation state
+        # 🔁 FORCE re-moderation visibility
         note.is_approved = False
         note.is_rejected = False
         note.rejection_reason = ""
-        note.save(update_fields=[
-            "is_approved",
-            "is_rejected",
-            "rejection_reason",
-        ])
+        note.save(
+            update_fields=[
+                "is_approved",
+                "is_rejected",
+                "rejection_reason",
+            ]
+        )
 
         return Response(
             AdminNoteSerializer(
@@ -117,12 +116,22 @@ class StudentNoteUpdateAPIView(APIView):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def approve_note(request, pk):
-    note = get_object_or_404(Note, pk=pk)
+    note = get_object_or_404(
+        Note,
+        pk=pk,
+        is_deleted=False,
+    )
 
     note.is_approved = True
     note.is_rejected = False
     note.rejection_reason = ""
-    note.save()
+    note.save(
+        update_fields=[
+            "is_approved",
+            "is_rejected",
+            "rejection_reason",
+        ]
+    )
 
     return Response({"message": "Note approved successfully"})
 
@@ -130,12 +139,24 @@ def approve_note(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def reject_note(request, pk):
-    note = get_object_or_404(Note, pk=pk)
+    note = get_object_or_404(
+        Note,
+        pk=pk,
+        is_deleted=False,
+    )
 
     note.is_approved = False
     note.is_rejected = True
-    note.rejection_reason = request.data.get("reason", "Rejected by admin")
-    note.save()
+    note.rejection_reason = request.data.get(
+        "reason", "Rejected by admin"
+    )
+    note.save(
+        update_fields=[
+            "is_approved",
+            "is_rejected",
+            "rejection_reason",
+        ]
+    )
 
     return Response({"message": "Note rejected successfully"})
 
@@ -151,15 +172,17 @@ class AdminDashboardAPIView(APIView):
             "total_users": User.objects.count(),
             "total_notes": Note.objects.filter(is_deleted=False).count(),
             "pending_notes": Note.objects.filter(
+                is_deleted=False,
                 is_approved=False,
                 is_rejected=False,
-                is_deleted=False,
             ).count(),
             "approved_notes": Note.objects.filter(
-                is_approved=True, is_deleted=False
+                is_deleted=False,
+                is_approved=True,
             ).count(),
             "rejected_notes": Note.objects.filter(
-                is_rejected=True, is_deleted=False
+                is_deleted=False,
+                is_rejected=True,
             ).count(),
         }
 
@@ -193,13 +216,14 @@ class AdminDashboardAPIView(APIView):
 def public_notes_api(request):
     notes = Note.objects.filter(
         is_deleted=False,
-        is_approved=True
+        is_approved=True,
     ).order_by("-uploaded_at")
 
-    serializer = AdminNoteSerializer(
-        notes, many=True, context={"request": request}
+    return Response(
+        AdminNoteSerializer(
+            notes, many=True, context={"request": request}
+        ).data
     )
-    return Response(serializer.data)
 
 
 # ======================================================
@@ -213,10 +237,11 @@ class NoteCommentsAPIView(APIView):
             note_id=note_id
         ).order_by("-created_at")
 
-        serializer = CommentSerializer(
-            comments, many=True, context={"request": request}
-        )
-        return Response({"comments": serializer.data})
+        return Response({
+            "comments": CommentSerializer(
+                comments, many=True, context={"request": request}
+            ).data
+        })
 
     def post(self, request, note_id):
         comment = Comment.objects.create(
@@ -224,10 +249,12 @@ class NoteCommentsAPIView(APIView):
             user=request.user,
             content=request.data.get("content"),
         )
-        serializer = CommentSerializer(
-            comment, context={"request": request}
+        return Response(
+            CommentSerializer(
+                comment, context={"request": request}
+            ).data,
+            status=201,
         )
-        return Response(serializer.data, status=201)
 
 
 class CommentDeleteAPIView(DestroyAPIView):

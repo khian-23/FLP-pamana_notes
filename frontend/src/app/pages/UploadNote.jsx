@@ -29,9 +29,10 @@ const UploadNote = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // ✅ FETCH FILTERED SUBJECTS
+  // ✅ FETCH SUBJECTS (AUTH REQUIRED)
   useEffect(() => {
     const token = localStorage.getItem("access");
+    if (!token) return;
 
     axios
       .get("http://127.0.0.1:8000/api/subjects/student/", {
@@ -41,7 +42,7 @@ const UploadNote = () => {
       .catch(() => setSubjects([]));
   }, []);
 
-  // 🔒 AUTO-DISABLE COURSE VISIBILITY FOR GENERAL SUBJECTS
+  // 🔒 AUTO-FORCE VISIBILITY FOR GENERAL SUBJECTS
   useEffect(() => {
     if (form.subject?.type === "General" && form.visibility === "course") {
       setForm((prev) => ({ ...prev, visibility: "school" }));
@@ -53,21 +54,34 @@ const UploadNote = () => {
     setError("");
     setSuccess("");
 
-    if (!form.subject) return setError("Please select a subject.");
-    if (!form.file) return setError("Please select a file.");
-    if (form.file.type !== "application/pdf")
-      return setError("Only PDF files are allowed.");
-    if (form.file.size > MAX_FILE_SIZE)
+    // ✅ VALIDATION
+    if (!form.title.trim()) {
+      return setError("Title is required.");
+    }
+
+    if (!form.subject) {
+      return setError("Please select a subject.");
+    }
+
+    if (!form.description.trim() && !form.file) {
+      return setError("Provide a description or upload a file.");
+    }
+
+    if (form.file && form.file.size > MAX_FILE_SIZE) {
       return setError("File size must be 10MB or less.");
+    }
 
     const token = localStorage.getItem("access");
-    const data = new FormData();
+    if (!token) {
+      return setError("Session expired. Please log in again.");
+    }
 
-    data.append("title", form.title);
-    data.append("description", form.description);
+    const data = new FormData();
+    data.append("title", form.title.trim());
+    data.append("description", form.description.trim());
     data.append("subject", form.subject.id);
     data.append("visibility", form.visibility);
-    data.append("file", form.file);
+    if (form.file) data.append("file", form.file);
 
     try {
       setProgress(0);
@@ -78,6 +92,7 @@ const UploadNote = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
           onUploadProgress: (e) => {
+            if (!e.total) return;
             const percent = Math.round((e.loaded * 100) / e.total);
             setProgress(percent);
           },
@@ -85,7 +100,7 @@ const UploadNote = () => {
       );
 
       setProgress(100);
-      setSuccess("Note uploaded successfully");
+      setSuccess("Note uploaded successfully.");
 
       setForm({
         title: "",
@@ -98,7 +113,9 @@ const UploadNote = () => {
       setTimeout(() => navigate("/app/my-notes"), 800);
     } catch (err) {
       setError(
-        err?.response?.data?.detail || "Upload failed"
+        err?.response?.data?.detail ||
+          err?.response?.data?.file ||
+          "Upload failed."
       );
     }
   };
@@ -126,7 +143,9 @@ const UploadNote = () => {
           required
           sx={{ mb: 2 }}
           value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, title: e.target.value })
+          }
         />
 
         <TextField
@@ -144,6 +163,7 @@ const UploadNote = () => {
         <Autocomplete
           options={subjects}
           getOptionLabel={(opt) => `${opt.name} (${opt.type})`}
+          value={form.subject}
           onChange={(_, value) =>
             setForm({ ...form, subject: value })
           }
@@ -164,7 +184,6 @@ const UploadNote = () => {
         >
           <MenuItem value="public">Public</MenuItem>
           <MenuItem value="school">School</MenuItem>
-
           <MenuItem
             value="course"
             disabled={form.subject?.type === "General"}
