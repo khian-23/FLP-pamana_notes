@@ -20,7 +20,7 @@ class AdminNoteSerializer(serializers.ModelSerializer):
     saves_count = serializers.IntegerField(
         source="saves.count", read_only=True
     )
-
+    downloads = serializers.IntegerField(read_only=True)
     is_saved = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
@@ -52,6 +52,7 @@ class AdminNoteSerializer(serializers.ModelSerializer):
             "likes_count",
             "saves_count",
             "is_saved",
+            "downloads",
             "status",
             "is_approved",
             "is_rejected",

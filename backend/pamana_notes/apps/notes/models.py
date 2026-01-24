@@ -30,7 +30,7 @@ class Note(models.Model):
         (VISIBILITY_SCHOOL, "School"),
         (VISIBILITY_COURSE, "Course Only"),
     ]
-
+    downloads = models.PositiveIntegerField(default=0)
     title = models.CharField(max_length=255)
     description = models.TextField()
     content = models.TextField(blank=True)

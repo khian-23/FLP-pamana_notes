@@ -29,6 +29,7 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
   const [likeAnim, setLikeAnim] = useState(false);
+  const [downloads, setDownloads] = useState(0);
 
   /* ---------- INIT ---------- */
   useEffect(() => {
@@ -36,6 +37,7 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
     setSaved(Boolean(note.is_saved));
     setLiked(Boolean(note.is_liked));
     setLikesCount(Number(note.likes_count) || 0);
+    setDownloads(Number(note.downloads) || 0);
   }, [note]);
 
   /* ---------- LOAD COMMENTS ---------- */
@@ -146,6 +148,44 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
         <Typography variant="caption" display="block" sx={{ mb: 2 }}>
           Uploaded by {note.author_school_id}
         </Typography>
+        {/* 📥 DOWNLOAD */}
+        {note.file && (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="success"
+              onClick={async () => {
+                try {
+                  const res = await axios.post(
+                    `${API_BASE}/api/notes/notes/${note.id}/track-download/`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+
+                  setDownloads(res.data.downloads); // ✅ THIS WAS MISSING
+                } catch {
+                  // silent fail
+                }
+
+                window.open(note.file, "_blank");
+              }}
+            >
+              Download File
+            </Button>
+
+
+            <Typography
+              variant="caption"
+              display="block"
+              textAlign="center"
+              sx={{ mt: 0.5 }}
+            >
+              {note.downloads} downloads
+            </Typography>
+          </Box>
+        )}
+
 
         {/* ❤️ LIKE BAR */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

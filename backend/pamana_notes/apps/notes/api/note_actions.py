@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-
+from django.db.models import F
 from apps.notes.models import Note, NoteLike, NoteSave, Comment
 from apps.notes.api.serializers import CommentSerializer
 
@@ -35,6 +35,22 @@ class ToggleSaveAPIView(APIView):
             save.delete()
 
         return Response({"saved": created})
+
+class TrackDownloadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        note = get_object_or_404(Note, pk=pk)
+
+        Note.objects.filter(pk=pk).update(
+            downloads=F("downloads") + 1
+        )
+
+        note.refresh_from_db()  # ✅ IMPORTANT
+
+        return Response({
+            "downloads": note.downloads
+        })
 
 
 class CommentAPIView(APIView):

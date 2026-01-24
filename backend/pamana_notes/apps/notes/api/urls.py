@@ -15,7 +15,7 @@ from .views import (
     NoteCommentsAPIView,
     PendingNotesAPIView,
     ModeratedNotesAPIView,
-    AdminDashboardAPIView,
+    
     approve_note,
     reject_note,
 )
@@ -24,6 +24,7 @@ from .note_actions import (
     ToggleLikeAPIView,
     ToggleSaveAPIView,
     CommentAPIView,
+    TrackDownloadAPIView,
 )
 
 urlpatterns = [
@@ -47,6 +48,7 @@ urlpatterns = [
 
     path("notes/<int:pk>/", NoteDetailAPIView.as_view()),
     path("notes/<int:pk>/like/", ToggleLikeAPIView.as_view()),
+    path("notes/<int:pk>/track-download/", TrackDownloadAPIView.as_view()),
     path("notes/<int:pk>/save/", ToggleSaveAPIView.as_view()),
     path("notes/<int:pk>/comments/", CommentAPIView.as_view()),
 
