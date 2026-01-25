@@ -6,28 +6,21 @@ import {
   Alert,
   TextField,
   Chip,
-  Grid,
+  Stack,
 } from "@mui/material";
 import { useOutletContext } from "react-router-dom";
 
 import NoteCard from "../components/NoteCard";
 import NoteDetailModal from "./NoteDetailModal";
 
-import {
-  getUserRole,
-  getUserCourse,
-  getAccessToken,
-} from "../../services/auth";
+import { getUserRole, getUserCourse } from "../../services/auth";
 import { apiFetch } from "../../services/api";
 
 export default function Home() {
-  const token = getAccessToken();
-
   const role = getUserRole();
   const course = getUserCourse();
   const isModerator = role === "moderator";
 
-  // ✅ SAFE outlet context
   const outletContext = useOutletContext();
   const setSavedVersion = outletContext?.setSavedVersion;
 
@@ -86,75 +79,124 @@ export default function Home() {
       )
     );
 
-    if (setSavedVersion) {
-      setSavedVersion((v) => v + 1);
-    }
+    setSavedVersion?.((v) => v + 1);
   };
+
+  /* ================= STATES ================= */
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (error) return <Alert severity="error">{error}</Alert>;
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  /* ================= UI ================= */
 
   return (
-    <Box>
-      <Typography variant="h5" sx={{ mb: 1 }}>
-        Notes Feed
-      </Typography>
+    <Box sx={{ width: "100%", maxWidth: 1200, mx: "auto" }}>
+      {/* ===== HEADER / SEARCH ===== */}
+      <Box
+        sx={{
+          mb: 5,
+          p: 3,
+          borderRadius: 4,
+          background: "linear-gradient(180deg, #ffffff, #f7faf8)",
+          boxShadow: "0 10px 32px rgba(0,0,0,0.08)",
+        }}
+      >
+        <Typography
+          variant="h3"
+          fontWeight={800}
+          sx={{ color: "#0b6623", mb: 1 }}
+        >
+          Notes Feed
+        </Typography>
 
-      {/* ===== MODERATOR CONTEXT ===== */}
-      {isModerator && (
-        <Box sx={{ mb: 2 }}>
-          {course && (
+        <Typography
+          variant="body2"
+          sx={{ color: "#5f6f67", mb: 2 }}
+        >
+          Browse and search shared academic notes
+        </Typography>
+
+        {isModerator && (
+          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+            {course && (
+              <Chip
+                label={`Course: ${course}`}
+                size="small"
+                color="info"
+              />
+            )}
             <Chip
-              label={`Course: ${course}`}
+              label="Includes General Subjects"
               size="small"
-              color="info"
-              sx={{ mr: 1 }}
+              color="success"
+              variant="outlined"
             />
-          )}
-          <Chip
-            label="Includes General Subjects"
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-        </Box>
-      )}
+          </Stack>
+        )}
 
-      <TextField
-        fullWidth
-        label="Search notes"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mb: 3 }}
-      />
+        <TextField
+          fullWidth
+          placeholder="Search by title or subject…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            sx: {
+              height: 56,
+              fontSize: 20,
+              borderRadius: 2,
+              backgroundColor: "#9da8a3",
+              "& fieldset": {
+                borderColor: "#0b0b0b",
+              },
+              "&:hover fieldset": {
+                borderColor: "#0b6623",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#0b6623",
+                borderWidth: 2,
+              },
+            },
+          }}
+        />
+      </Box>
 
+      {/* ===== EMPTY STATE ===== */}
       {!filteredNotes.length && (
-        <Typography>No notes found.</Typography>
+        <Typography
+          sx={{
+            textAlign: "center",
+            color: "#6b6b6b",
+            mt: 6,
+          }}
+        >
+          No notes found.
+        </Typography>
       )}
 
-      <Grid container spacing={2}>
+      {/* ===== NOTES FEED ===== */}
+      <Stack spacing={3}>
         {filteredNotes.map((note) => (
-          <Grid item xs={12} sm={6} md={4} key={note.id}>
-            <NoteCard
-              note={note}
-              onView={() => openDetails(note)}
-            />
-          </Grid>
+          <NoteCard
+            key={note.id}
+            note={note}
+            onView={() => openDetails(note)}
+          />
         ))}
-      </Grid>
+      </Stack>
 
       <NoteDetailModal
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         note={detailNote}
-        token={token}
         onSaved={handleSaved}
       />
     </Box>

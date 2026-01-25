@@ -8,7 +8,13 @@ import {
   Divider,
   MenuItem,
   CircularProgress,
+  InputAdornment,
+  IconButton,
+  Chip,
+  Alert,
 } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 import { login, getUserRole } from "../services/auth";
 
@@ -23,8 +29,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [roleDetected, setRoleDetected] = useState(null);
 
   const navigate = useNavigate();
 
@@ -40,28 +53,43 @@ export default function LoginPage() {
 
   const redirectByRole = () => {
     const role = getUserRole();
+    setRoleDetected(role);
 
-    if (role === "admin") {
-      navigate("/admin", { replace: true });
-    } else if (role === "moderator") {
-      navigate("/moderator/pending", { replace: true });
-    } else {
-      navigate("/app/home", { replace: true });
-    }
+    setTimeout(() => {
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (role === "moderator") {
+        navigate("/moderator/pending", { replace: true });
+      } else {
+        navigate("/app/home", { replace: true });
+      }
+    }, 900);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
       await login(school_id, password);
       redirectByRole();
     } catch {
-      alert("Invalid credentials");
+      setError("Invalid School ID or password.");
+      setLoading(false);
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
 
     const res = await fetch("http://127.0.0.1:8000/api/accounts/register/", {
       method: "POST",
@@ -78,17 +106,17 @@ export default function LoginPage() {
     });
 
     if (!res.ok) {
-      alert("Registration failed");
+      setError("Registration failed. Please check your details.");
+      setLoading(false);
       return;
     }
 
-    // 🔑 AUTO LOGIN AFTER REGISTER (STUDENT ONLY)
     try {
       await login(school_id, password);
-      navigate("/app/home", { replace: true });
+      redirectByRole();
     } catch {
-      alert("Account created, please log in.");
       setMode("login");
+      setLoading(false);
     }
   };
 
@@ -96,27 +124,61 @@ export default function LoginPage() {
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #043d17, #0b6623)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
+        background: `
+          radial-gradient(circle at top right, rgba(185,246,202,0.18), transparent 40%),
+          radial-gradient(circle at bottom left, rgba(14,122,47,0.35), transparent 45%),
+          linear-gradient(135deg, #043d17 0%, #0b6623 60%, #054d19 100%)
+        `,
       }}
     >
       <Box
         component="form"
         onSubmit={mode === "login" ? handleLogin : handleRegister}
         sx={{
-          width: 420,
-          p: 4,
-          backgroundColor: "#054d19",
-          borderRadius: 3,
+          width: 440,
+          maxWidth: "92vw",
+          p: 4.5,
+          borderRadius: 4,
+          backdropFilter: "blur(14px)",
+          background: "rgba(255,255,255,0.12)",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
+          color: "white",
         }}
       >
-        <Typography color="white" variant="h5" textAlign="center">
-          {mode === "login" ? "Login" : "Register"}
+        <Typography variant="h5" fontWeight={700} textAlign="center">
+          {mode === "login" ? "Welcome Back" : "Create Account"}
         </Typography>
 
-        <Divider sx={{ my: 2 }} />
+        <Typography
+          textAlign="center"
+          fontSize={14}
+          sx={{ opacity: 0.85, mt: 0.5 }}
+        >
+          PAMANA Notes Academic Platform
+        </Typography>
+
+        <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.25)" }} />
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {roleDetected && (
+          <Box sx={{ textAlign: "center", mb: 2 }}>
+            <Chip
+              label={`Logging in as ${roleDetected.toUpperCase()}`}
+              color="success"
+              variant="outlined"
+            />
+          </Box>
+        )}
 
         <TextField
           label="School ID"
@@ -158,7 +220,9 @@ export default function LoginPage() {
             />
 
             {loadingCourses ? (
-              <CircularProgress size={22} />
+              <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
             ) : (
               <TextField
                 select
@@ -181,23 +245,53 @@ export default function LoginPage() {
 
         <TextField
           label="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           fullWidth
           margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
 
         {mode === "register" && (
           <TextField
             label="Confirm Password"
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             fullWidth
             margin="normal"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    edge="end"
+                  >
+                    {showConfirmPassword ? (
+                      <VisibilityOffIcon />
+                    ) : (
+                      <VisibilityIcon />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
         )}
 
@@ -205,23 +299,40 @@ export default function LoginPage() {
           type="submit"
           fullWidth
           variant="contained"
-          sx={{ mt: 3 }}
+          disabled={loading}
+          sx={{
+            mt: 3,
+            py: 1.4,
+            fontWeight: 700,
+            borderRadius: 3,
+          }}
         >
-          {mode === "login" ? "Login" : "Register"}
+          {loading ? (
+            <CircularProgress size={22} color="inherit" />
+          ) : mode === "login" ? (
+            "Login"
+          ) : (
+            "Register"
+          )}
         </Button>
 
-        <Typography mt={2} textAlign="center">
+        <Typography
+          mt={3}
+          textAlign="center"
+          fontSize={14}
+          sx={{ opacity: 0.85 }}
+        >
           {mode === "login" ? (
             <span
               onClick={() => setMode("register")}
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", textDecoration: "underline" }}
             >
               No account? Register
             </span>
           ) : (
             <span
               onClick={() => setMode("login")}
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", textDecoration: "underline" }}
             >
               Already have an account? Login
             </span>

@@ -8,10 +8,13 @@ import {
   Chip,
   TextField,
   Button,
+  Stack,
+  Divider,
 } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
 
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -20,7 +23,8 @@ import { toggleSaveNote } from "../../services/noteActions";
 
 const API_BASE = "http://127.0.0.1:8000";
 
-const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
+const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
+  const token = localStorage.getItem("access");
   const navigate = useNavigate();
 
   const [liked, setLiked] = useState(false);
@@ -31,7 +35,6 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
   const [likeAnim, setLikeAnim] = useState(false);
   const [downloads, setDownloads] = useState(0);
 
-  /* ---------- INIT ---------- */
   useEffect(() => {
     if (!note) return;
     setSaved(Boolean(note.is_saved));
@@ -40,7 +43,6 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
     setDownloads(Number(note.downloads) || 0);
   }, [note]);
 
-  /* ---------- LOAD COMMENTS ---------- */
   useEffect(() => {
     if (!open || !note || !token) return;
 
@@ -58,14 +60,10 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
   if (!note) return null;
 
   const requireLogin = (fn) => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!token) return navigate("/login");
     fn();
   };
 
-  /* ---------- LIKE ---------- */
   const toggleLike = () =>
     requireLogin(async () => {
       const res = await axios.post(
@@ -73,24 +71,19 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setLiked(res.data.liked);
       setLikesCount(res.data.likes_count);
-
       setLikeAnim(true);
-      setTimeout(() => setLikeAnim(false), 180);
+      setTimeout(() => setLikeAnim(false), 160);
     });
 
-  /* ---------- SAVE ---------- */
   const toggleSave = async () => {
     if (!token) return navigate("/login");
-
     const res = await toggleSaveNote(note.id);
     setSaved(res.saved);
     onSaved?.();
   };
 
-  /* ---------- ADD COMMENT (OPTIMISTIC) ---------- */
   const submitComment = () =>
     requireLogin(async () => {
       if (!text.trim()) return;
@@ -113,7 +106,6 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
           { content: optimistic.content },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
         setComments((prev) =>
           prev.map((c) => (c.id === optimistic.id ? res.data : c))
         );
@@ -122,12 +114,10 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
       }
     });
 
-  /* ---------- DELETE COMMENT ---------- */
   const deleteComment = async (id) => {
     await axios.delete(`${API_BASE}/api/notes/comments/${id}/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
     setComments((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -138,23 +128,70 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
     });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{note.title}</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          backgroundColor: "#8becad",
+        },
+      }}
+    >
+      {/* HEADER */}
+      <DialogTitle sx={{ pr: 6 }}>
+        <Typography
+          fontSize={45}
+          fontWeight={700}
+          sx={{ color: "#000000" }}
+        >
 
-      <DialogContent>
-        <Chip label={note.visibility.toUpperCase()} size="small" sx={{ mb: 2 }} />
-
-        <Typography>Subject: {note.subject}</Typography>
-        <Typography variant="caption" display="block" sx={{ mb: 2 }}>
-          Uploaded by {note.author_school_id}
+          {note.title}
         </Typography>
-        {/* 📥 DOWNLOAD */}
+        <IconButton
+          onClick={onClose}
+          sx={{ position: "absolute", right: 16, top: 16 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ pt: 1, pb: 4 }}>
+        {/* META */}
+        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+          <Chip label={note.visibility} size="small" />
+          {note.subject && <Chip label={note.subject} size="small" />}
+        </Stack>
+
+        <Typography fontSize={16} color="#000000">
+          Uploaded by <strong>{note.author_school_id}</strong>
+        </Typography>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* DOWNLOAD */}
         {note.file && (
-          <Box sx={{ mt: 2 }}>
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              backgroundColor: "#59cb87c5",
+              boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
+              mb: 3,
+            }}
+          >
             <Button
               fullWidth
+              size="large"
               variant="contained"
-              color="success"
+              sx={{
+                backgroundColor: "#568d6b",
+                fontWeight: 600,
+                py: 1.2,
+                "&:hover": { backgroundColor: "#0f9724" },
+              }}
               onClick={async () => {
                 try {
                   const res = await axios.post(
@@ -162,111 +199,117 @@ const NoteDetailModal = ({ open, onClose, note, token, onSaved }) => {
                     {},
                     { headers: { Authorization: `Bearer ${token}` } }
                   );
-
-                  setDownloads(res.data.downloads); // ✅ THIS WAS MISSING
-                } catch {
-                  // silent fail
-                }
-
+                  setDownloads(res.data.downloads);
+                } catch {}
                 window.open(note.file, "_blank");
               }}
             >
-              Download File
+              Download Academic File
             </Button>
-
 
             <Typography
               variant="caption"
               display="block"
               textAlign="center"
-              sx={{ mt: 0.5 }}
+              sx={{ mt: 1, color: "#00871b" }}
             >
-              {note.downloads} downloads
+              {downloads} Downloads
             </Typography>
           </Box>
         )}
 
-
-        {/* ❤️ LIKE BAR */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {/* ACTIONS */}
+        <Stack direction="row" spacing={2} alignItems="center">
           <IconButton
             onClick={toggleLike}
             color="error"
             sx={{
-              transform: likeAnim ? "scale(1.35)" : "scale(1)",
-              transition: "transform 0.15s ease-out",
+              transform: likeAnim ? "scale(1.25)" : "scale(1)",
+              transition: "transform 0.15s ease",
             }}
           >
             {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
           </IconButton>
 
-          <Typography>{likesCount} likes</Typography>
+          <Typography fontSize={14}>{likesCount} likes</Typography>
 
-          <Button size="small" variant="outlined" onClick={toggleSave}>
+          <Button
+            variant={saved ? "contained" : "outlined"}
+            onClick={toggleSave}
+            size="small"
+          >
             {saved ? "Saved" : "Save"}
           </Button>
-        </Box>
+        </Stack>
 
-        {/* 💬 COMMENTS */}
-        <Box sx={{ mt: 3 }}>
-          <Typography fontWeight="bold">Comments</Typography>
+        <Divider sx={{ my: 3 }} />
 
+        {/* COMMENTS */}
+        <Typography fontWeight={700} fontSize={16} sx={{ mb: 1 }}>
+          Discussion
+        </Typography>
+
+        <Stack spacing={2}>
           <TextField
             fullWidth
-            size="small"
-            placeholder="Add a comment..."
+            placeholder="Write a comment…"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            sx={{ mt: 1 }}
+            multiline
+            minRows={3}
+            sx={{
+              backgroundColor: "#5d9459",
+              borderRadius: 2,
+              "& .MuiInputBase-input": {
+                fontSize: 14,
+              },
+            }}
           />
-          <Button size="small" onClick={submitComment}>
-            Post
-          </Button>
 
-          {!comments.length && (
-            <Typography variant="caption">No comments yet.</Typography>
-          )}
+          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              variant="contained"
+              size="small"
+              disabled={!text.trim()}
+              onClick={submitComment}
+              sx={{ fontWeight: 600 }}
+            >
+              Post
+            </Button>
+          </Box>
 
           {comments.map((c) => (
             <Box
               key={c.id}
               sx={{
-                mt: 1,
-                p: 1,
-                borderRadius: 1,
-                bgcolor: "#f5f5f5",
-                opacity: c._optimistic ? 0.6 : 1,
+                p: 2,
+                borderRadius: 3,
+                backgroundColor: "#4b7a47",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography fontWeight="bold">
-                  {c.user_school_id || "Unknown"}
+              <Stack direction="row" justifyContent="space-between">
+                <Typography fontWeight={600} fontSize={19}>
+                  {c.user_school_id}
                 </Typography>
 
                 {c.can_delete && !c._optimistic && (
-                  <IconButton
-                    size="small"
-                    onClick={() => deleteComment(c.id)}
-                  >
+                  <IconButton size="small" onClick={() => deleteComment(c.id)}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 )}
-              </Box>
+              </Stack>
 
-              <Typography>{c.content}</Typography>
+              <Typography fontSize={16} sx={{ mt: 0.5 }}>
+                {c.content}
+              </Typography>
 
               <Typography variant="caption" color="text.secondary">
                 {formatTime(c.created_at)}
               </Typography>
             </Box>
           ))}
-        </Box>
+        </Stack>
       </DialogContent>
     </Dialog>
   );

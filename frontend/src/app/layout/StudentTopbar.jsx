@@ -1,3 +1,5 @@
+// src/app/layout/StudentTopbar.jsx
+
 import {
   AppBar,
   Toolbar,
@@ -18,7 +20,7 @@ export default function StudentTopbar({ onMenuClick }) {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -26,13 +28,15 @@ export default function StudentTopbar({ onMenuClick }) {
       position="sticky"
       elevation={0}
       sx={{
-        bgcolor: "white",
-        color: "#0b6623",
-        borderBottom: "1px solid #e0e0e0",
+        bgcolor: "background.paper",
+        color: "text.primary",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "blur(8px)",
       }}
     >
-      <Toolbar sx={{ justifyContent: "space-between" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Toolbar sx={{ justifyContent: "space-between", minHeight: 64 }}>
+        {/* LEFT */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <IconButton
             edge="start"
             onClick={onMenuClick}
@@ -41,8 +45,8 @@ export default function StudentTopbar({ onMenuClick }) {
             <MenuIcon />
           </IconButton>
 
-          <Typography fontWeight="bold">
-            Pamana Notes
+          <Typography fontWeight={700} letterSpacing="0.04em">
+            PAMANA NOTES
           </Typography>
 
           {role === "moderator" && (
@@ -52,23 +56,30 @@ export default function StudentTopbar({ onMenuClick }) {
                 size="small"
                 color="success"
                 variant="outlined"
+                sx={{ fontWeight: 600 }}
               />
               {course && (
                 <Chip
                   label={course}
                   size="small"
-                  color="default"
                   variant="outlined"
+                  sx={{ opacity: 0.85 }}
                 />
               )}
             </>
           )}
         </Box>
 
+        {/* RIGHT */}
         <Button
           variant="outlined"
           color="success"
           onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            px: 2.5,
+            fontWeight: 600,
+          }}
         >
           Logout
         </Button>

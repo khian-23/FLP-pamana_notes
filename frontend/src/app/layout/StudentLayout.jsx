@@ -17,7 +17,15 @@ export default function StudentLayout() {
     role === "moderator" ? ModeratorSidebar : StudentSidebar;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7f6" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "#f5f7f6",
+        width: "100%",
+      }}
+    >
+      {/* SIDEBAR */}
       {isMobile ? (
         <Drawer
           open={open}
@@ -30,9 +38,26 @@ export default function StudentLayout() {
         <Sidebar />
       )}
 
-      <Box sx={{ flexGrow: 1 }}>
+      {/* MAIN CONTENT */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0, // 👈 VERY IMPORTANT for grids
+        }}
+      >
         <StudentTopbar onMenuClick={() => setOpen(true)} />
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
+
+        {/* PAGE CONTENT WRAPPER */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            width: "100%",
+            px: { xs: 2, md: 4 },
+            py: { xs: 2, md: 3 },
+          }}
+        >
           <Outlet context={{ savedVersion, setSavedVersion }} />
         </Box>
       </Box>

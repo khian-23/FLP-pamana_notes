@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from apps.notes.api.views import IsReviewer
 
 from apps.notes.models import Note
-from apps.notes.api.serializers import NoteSerializer
+from apps.notes.api.serializers import AdminNoteSerializer
 
 
 class ModeratedNotesAPIView(APIView):
@@ -11,8 +11,14 @@ class ModeratedNotesAPIView(APIView):
 
     def get(self, request):
         notes = Note.objects.filter(
-            status__in=["approved", "rejected"]
+            is_approved=True
+        ).union(
+            Note.objects.filter(is_rejected=True)
         ).order_by("-updated_at")
 
-        serializer = NoteSerializer(notes, many=True)
+        serializer = AdminNoteSerializer(
+            notes,
+            many=True,
+            context={"request": request},
+        )
         return Response(serializer.data)

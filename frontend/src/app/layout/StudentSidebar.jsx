@@ -1,3 +1,5 @@
+// src/app/layout/StudentSidebar.jsx
+
 import {
   Box,
   List,
@@ -33,40 +35,81 @@ export default function StudentSidebar({ onNavigate }) {
     <Box
       sx={{
         width: 260,
-        bgcolor: "#0b6623",
-        color: "white",
         minHeight: "100vh",
+        bgcolor: "background.paper",
+        color: "text.primary",
+        px: 1.5,
+        py: 2,
+        boxShadow: 3,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <Typography
         variant="h6"
-        fontWeight="bold"
+        fontWeight={700}
         textAlign="center"
-        py={2}
+        sx={{ mb: 3, letterSpacing: "0.04em" }}
       >
         PAMANA NOTES
       </Typography>
 
-      <List>
-        {menu.map((item) => (
-          <ListItemButton
-            key={item.path}
-            selected={location.pathname.startsWith(item.path)} // ✅ FIX
-            onClick={() => {
-              navigate(item.path);
-              onNavigate && onNavigate();
-            }}
-            sx={{
-              "&.Mui-selected": { bgcolor: "#0e7c2f" },
-              "&:hover": { bgcolor: "#0e7c2f" },
-            }}
-          >
-            <ListItemIcon sx={{ color: "white" }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        ))}
+      <List sx={{ gap: 0.5 }}>
+        {menu.map((item) => {
+          const isActive = location.pathname.startsWith(item.path);
+
+          return (
+            <ListItemButton
+              key={item.path}
+              onClick={() => {
+                navigate(item.path);
+                onNavigate && onNavigate();
+              }}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                px: 2,
+                py: 1.2,
+                position: "relative",
+                color: isActive ? "primary.main" : "text.secondary",
+                bgcolor: isActive ? "rgba(110,231,183,0.12)" : "transparent",
+                transition: "all 0.25s ease",
+                "&:hover": {
+                  bgcolor: "rgba(110,231,183,0.18)",
+                },
+              }}
+            >
+              {isActive && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    left: 0,
+                    height: "60%",
+                    width: 4,
+                    bgcolor: "primary.main",
+                    borderRadius: 2,
+                  }}
+                />
+              )}
+
+              <ListItemIcon
+                sx={{
+                  minWidth: 36,
+                  color: isActive ? "primary.main" : "text.secondary",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{
+                  fontWeight: isActive ? 600 : 500,
+                }}
+              />
+            </ListItemButton>
+          );
+        })}
       </List>
     </Box>
   );

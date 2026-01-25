@@ -3,19 +3,10 @@ import {
   Grid,
   Paper,
   Typography,
-  Card,
-  CardContent,
-  Button,
-  Chip,
   Box,
 } from "@mui/material";
 import { fetchStudentDashboard } from "../../services/studentApi";
-
-const visibilityColor = {
-  public: "success",
-  school: "info",
-  course: "secondary",
-};
+import NoteCard from "../components/NoteCard"; // adjust path if needed
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -26,7 +17,13 @@ export default function Dashboard() {
       .catch(console.error);
   }, []);
 
-  if (!stats) return <Typography>Loading...</Typography>;
+  if (!stats) {
+    return (
+      <Typography sx={{ p: 3 }}>
+        Loading dashboard…
+      </Typography>
+    );
+  }
 
   const cards = [
     { label: "My Notes", value: stats.my_notes },
@@ -36,63 +33,78 @@ export default function Dashboard() {
   ];
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: 1, md: 2 } }}>
       {/* ===== DASHBOARD STATS ===== */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 5 }}>
         {cards.map((c) => (
-          <Grid item xs={12} md={3} key={c.label}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="subtitle1">{c.label}</Typography>
-              <Typography variant="h4">{c.value}</Typography>
+          <Grid item xs={12} sm={6} md={3} key={c.label}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+              }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                {c.label}
+              </Typography>
+
+              <Typography
+                variant="h4"
+                fontWeight={700}
+              >
+                {c.value}
+              </Typography>
             </Paper>
           </Grid>
         ))}
       </Grid>
 
-      {/* ===== STUDENT NOTES FEED ===== */}
-      <Typography variant="h6" sx={{ mb: 2 }}>
+      {/* ===== NOTES FEED ===== */}
+      <Typography
+        variant="h6"
+        fontWeight={600}
+        sx={{ mb: 2 }}
+      >
         Latest Notes
       </Typography>
 
-      {!stats.notes?.length && (
-        <Typography>No notes available.</Typography>
+      {!stats.notes?.length ? (
+        <Typography color="text.secondary">
+          No notes available yet.
+        </Typography>
+      ) : (
+        <Grid
+          container
+          spacing={3}
+          sx={{
+            pb: 4,
+          }}
+        >
+          {stats.notes.map((note) => (
+            <Grid
+              item
+              key={note.id}
+              xs={12}
+              sm={6}
+              md={4}
+              lg={3}
+              display="flex"
+            >
+              <NoteCard
+                note={note}
+                onView={() =>
+                  (window.location.href = `/app/notes/${note.id}`)
+                }
+              />
+            </Grid>
+          ))}
+        </Grid>
       )}
-
-      <Grid container spacing={2}>
-        {stats.notes?.map((note) => (
-          <Grid item xs={12} md={4} key={note.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{note.title}</Typography>
-
-                <Chip
-                  label={note.visibility.toUpperCase()}
-                  color={visibilityColor[note.visibility] || "default"}
-                  size="small"
-                  sx={{ my: 1 }}
-                />
-
-                <Typography variant="body2">
-                  Subject: {note.subject}
-                </Typography>
-
-                <Typography variant="caption" display="block">
-                  Uploaded by: {note.author_school_id}
-                </Typography>
-
-                <Button
-                  size="small"
-                  variant="outlined"
-                  sx={{ mt: 2 }}
-                  href={`/app/notes/${note.id}`}
-                >
-                  View
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
     </Box>
   );
 }

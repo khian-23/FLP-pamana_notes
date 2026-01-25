@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  Grid,
+  Box,
   Typography,
   Card,
-  CardContent,
-  CardActions,
   Button,
   Chip,
-  Box,
+  Stack,
+  Divider,
 } from "@mui/material";
 import { useOutletContext } from "react-router-dom";
 import { apiFetch } from "../../services/api";
@@ -30,84 +29,192 @@ export default function SavedNotes() {
   }, [savedVersion]);
 
   const removeSaved = async (noteId) => {
-    // Toggle save → this UNSAVES
     await toggleSaveNote(noteId);
-
-    // Optimistic UI update
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
-
-    // Sync other pages (Home, etc.)
     setSavedVersion((v) => v + 1);
   };
 
-  if (loading) {
-    return <Typography>Loading saved notes...</Typography>;
-  }
+if (loading) {
+  return (
+    <Box
+      sx={{
+        minHeight: 300,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+      }}
+    >
+      <Box>
+        <Typography
+          sx={{
+            fontSize: 18,
+            fontWeight: 600,
+            color: "#0b6623",
+          }}
+        >
+          Loading your saved notes
+        </Typography>
+        <Typography
+          sx={{
+            mt: 1,
+            fontSize: 14,
+            color: "#64748b",
+          }}
+        >
+          Please wait while we prepare your collection
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
-  if (!notes.length) {
-    return <Typography>No saved notes yet.</Typography>;
-  }
+if (!notes.length) {
+  return (
+    <Box
+      sx={{
+        minHeight: 300,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+      }}
+    >
+      <Box>
+        <Typography
+          sx={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: "#0b6623",
+          }}
+        >
+          No saved notes yet
+        </Typography>
+        <Typography
+          sx={{
+            mt: 1,
+            fontSize: 14,
+            color: "#64748b",
+            maxWidth: 420,
+          }}
+        >
+          Notes you save will appear here for quick access.
+          Browse the notes feed and save the materials you
+          find useful.
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+
 
   return (
-    <Box>
-      <Typography variant="h5" sx={{ mb: 2 }}>
+    <Box sx={{ maxWidth: 1100, mx: "auto" }}>
+      <Typography
+        variant="h4"
+        fontWeight={800}
+        sx={{ mb: 3, color: "#0b6623" }}
+      >
         Saved Notes
       </Typography>
 
-      <Grid container spacing={2}>
+      <Stack spacing={3}>
         {notes.map((note) => (
-          <Grid xs={12} sm={6} md={4} key={note.id}>
-            <Card
+          <Card
+            key={note.id}
+            sx={{
+              position: "relative",
+              p: 3.5,
+              borderRadius: 4,
+              background:
+                "linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%)",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
+              transition: "all 0.25s ease",
+              "&:hover": {
+                transform: "translateY(-4px)",
+                boxShadow: "0 18px 55px rgba(0,0,0,0.14)",
+              },
+            }}
+          >
+            {/* LEFT ACCENT RAIL */}
+            <Box
               sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
                 height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                transition: "0.2s",
-                "&:hover": { boxShadow: 6 },
+                width: 6,
+                borderTopLeftRadius: 16,
+                borderBottomLeftRadius: 16,
+                bgcolor: "#0b6623",
               }}
+            />
+
+            {/* HEADER */}
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              justifyContent="space-between"
+              alignItems={{ md: "center" }}
+              spacing={2}
+              sx={{ pl: 1 }}
             >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="h6" noWrap>
+              <Box>
+                <Typography
+                  sx={{
+                    fontSize: 20,
+                    fontWeight: 800,
+                    lineHeight: 1.25,
+                    color: "#0f172a",
+                  }}
+                >
                   {note.title}
                 </Typography>
 
-                <Chip
-                  label={note.subject}
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
-
                 <Typography
-                  variant="caption"
-                  display="block"
-                  sx={{ mt: 1 }}
+                  sx={{
+                    mt: 0.5,
+                    fontSize: 14,
+                    color: "#64748b",
+                  }}
                 >
-                  Uploaded by {note.author_school_id}
+                  Uploaded by{" "}
+                  <Box component="span" sx={{ fontWeight: 600 }}>
+                    {note.author_school_id}
+                  </Box>
                 </Typography>
-              </CardContent>
 
-              <CardActions>
+                {note.subject && (
+                  <Chip
+                    label={note.subject}
+                    size="small"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              </Box>
+
+              <Stack direction="row" spacing={1.5}>
                 <Button
-                  size="small"
-                  color="error"
                   variant="outlined"
+                  color="error"
                   onClick={() => removeSaved(note.id)}
                 >
                   Remove
                 </Button>
 
                 <Button
-                  size="small"
                   variant="contained"
                   onClick={() => window.open(note.file, "_blank")}
                 >
                   Open
                 </Button>
-              </CardActions>
-            </Card>
-          </Grid>
+              </Stack>
+            </Stack>
+
+            <Divider sx={{ my: 3 }} />
+          </Card>
         ))}
-      </Grid>
+      </Stack>
     </Box>
   );
 }

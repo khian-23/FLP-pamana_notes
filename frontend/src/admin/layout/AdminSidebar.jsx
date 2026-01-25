@@ -1,3 +1,5 @@
+// src/admin/layout/Sidebar.jsx
+
 import {
   List,
   ListItemButton,
@@ -21,12 +23,26 @@ const AdminSidebar = ({ onNavigate }) => {
       selected={location.pathname.startsWith(to)}
       onClick={onNavigate}
       sx={{
-        borderRadius: 1,
+        borderRadius: 2,
         mx: 1,
-        my: 0.5,
+        my: 0.75,
+        px: 2,
+        py: 1.2,
+        "&.Mui-selected": {
+          bgcolor: "rgba(110,231,183,0.12)",
+        },
+        "&:hover": {
+          bgcolor: "rgba(110,231,183,0.18)",
+        },
       }}
     >
-      <ListItemText primary={label} />
+      <ListItemText
+        primary={label}
+        primaryTypographyProps={{
+          fontSize: "0.95rem", // 👈 slightly bigger
+          fontWeight: 600,
+        }}
+      />
     </ListItemButton>
   );
 
@@ -34,16 +50,16 @@ const AdminSidebar = ({ onNavigate }) => {
   const isModerator = role === "moderator";
 
   return (
-    <Box sx={{ width: 240 }}>
+    <Box sx={{ width: 260 }}>
       <Toolbar>
-        <Typography variant="h6" noWrap>
+        <Typography variant="h6" fontWeight={700}>
           {isAdmin ? "Admin Panel" : "Moderator Panel"}
         </Typography>
       </Toolbar>
 
       <Divider />
 
-      <List sx={{ px: 1 }}>
+      <List sx={{ px: 1, mt: 1 }}>
         {/* ADMIN ONLY */}
         {isAdmin && navItem("/admin", "Dashboard")}
 
