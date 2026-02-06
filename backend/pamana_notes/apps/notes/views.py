@@ -9,7 +9,6 @@ from django.http import FileResponse, JsonResponse
 from django.urls import reverse
 from django.db.models import Q
 from django.core.paginator import Paginator
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.exceptions import PermissionDenied
 from django.conf import settings

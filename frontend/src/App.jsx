@@ -58,8 +58,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
-        <Route path="/moderator/*" element={<ModeratorRoutes />} />
 
 
         {/* ================= ADMIN ================= */}
