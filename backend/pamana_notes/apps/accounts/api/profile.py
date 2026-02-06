@@ -7,6 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from PIL import Image
 
 from apps.accounts.models import CustomUser, Profile
 from apps.accounts.api.serializers import (
@@ -98,6 +99,14 @@ class StudentProfileUpdateAPIView(APIView):
             if avatar.size > MAX_AVATAR_SIZE:
                 return Response(
                     {"avatar": "Avatar size must be 2MB or less."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                image = Image.open(avatar)
+                image.verify()
+            except Exception:
+                return Response(
+                    {"avatar": "Invalid image file."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 

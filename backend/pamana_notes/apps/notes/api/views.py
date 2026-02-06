@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
@@ -249,6 +250,7 @@ def public_notes_api(request):
     notes = Note.objects.filter(
         is_deleted=False,
         is_approved=True,
+        visibility=Note.VISIBILITY_PUBLIC,
     ).order_by("-uploaded_at")
 
     return Response(
@@ -263,8 +265,16 @@ def public_notes_api(request):
 # ======================================================
 class NoteCommentsAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "comment"
 
     def get(self, request, note_id):
+        note = get_object_or_404(Note, pk=note_id, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response(
+                {"detail": "Not allowed"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         comments = Comment.objects.filter(
             note_id=note_id
         ).order_by("-created_at")
@@ -276,10 +286,24 @@ class NoteCommentsAPIView(APIView):
         })
 
     def post(self, request, note_id):
+        note = get_object_or_404(Note, pk=note_id, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response(
+                {"detail": "Not allowed"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        content = (request.data.get("content") or "").strip()
+        if not content:
+            return Response(
+                {"content": "Comment cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         comment = Comment.objects.create(
             note_id=note_id,
             user=request.user,
-            content=request.data.get("content"),
+            content=content,
         )
         return Response(
             CommentSerializer(

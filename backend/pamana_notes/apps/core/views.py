@@ -1,7 +1,8 @@
 # apps/core/views.py
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
+from django.conf import settings
 from django.http import JsonResponse
 
 
@@ -13,6 +14,17 @@ def about(request):
 
 
 def create_admin(request):
+    # Disabled unless explicitly enabled for local bootstrap.
+    if not settings.DEBUG or not settings.ADMIN_BOOTSTRAP_TOKEN:
+        return HttpResponseForbidden("Admin bootstrap disabled.")
+
+    token = (
+        request.headers.get("X-Admin-Bootstrap-Token")
+        or request.GET.get("token")
+    )
+    if token != settings.ADMIN_BOOTSTRAP_TOKEN:
+        return HttpResponseForbidden("Invalid bootstrap token.")
+
     User = get_user_model()
 
     if User.objects.filter(is_superuser=True).exists():

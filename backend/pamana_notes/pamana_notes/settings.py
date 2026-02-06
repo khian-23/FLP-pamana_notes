@@ -1,7 +1,8 @@
 import os
 import sys
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
 from django.urls import reverse_lazy
 from datetime import timedelta
@@ -20,12 +21,21 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # =========================
 # SECURITY
 # =========================
-SECRET_KEY = config(
-    "SECRET_KEY",
-    default="django-insecure-5t9x!8kz#2lq&v3b$y@w1u^r0n7h!p4e&f%a*9d!m6q3s2z",
+SECRET_KEY = config("SECRET_KEY", default="")
+DEBUG = config("DEBUG", default=False, cast=bool)
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1",
+    cast=Csv(),
 )
-DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = ["*"]
+
+if not SECRET_KEY:
+    if DEBUG:
+        # Development-only fallback. Always set SECRET_KEY in production.
+        SECRET_KEY = "dev-insecure-change-me"
+    else:
+        raise ImproperlyConfigured("SECRET_KEY is required when DEBUG is False.")
+ADMIN_BOOTSTRAP_TOKEN = config("ADMIN_BOOTSTRAP_TOKEN", default="")
 
 # =========================
 # INSTALLED APPS
@@ -149,6 +159,19 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "1000/hour",
+        "anon": "100/hour",
+        "auth": "20/hour",
+        "register": "10/hour",
+        "upload": "30/hour",
+        "comment": "120/hour",
+        "note_action": "300/hour",
+    },
 }
 
 SIMPLE_JWT = {

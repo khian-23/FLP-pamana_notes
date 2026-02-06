@@ -1,9 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework import status
 
-from apps.notes.models import Note
+from django.core.exceptions import ValidationError
+from apps.notes.models import Note, validate_file_type
 from apps.subjects.models import Subject
 from apps.notes.api.serializers import AdminNoteSerializer
 
@@ -13,6 +15,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 class StudentUploadAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "upload"
 
     def post(self, request):
         user = request.user
@@ -59,6 +63,14 @@ class StudentUploadAPIView(APIView):
                 {"file": "File size must be 10MB or less."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if file:
+            try:
+                validate_file_type(file)
+            except ValidationError as exc:
+                return Response(
+                    {"file": exc.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # ============================
         # MODERATOR COURSE RESTRICTION
@@ -73,6 +85,12 @@ class StudentUploadAPIView(APIView):
         # ============================
         # VISIBILITY RULES
         # ============================
+        if visibility not in dict(Note.VISIBILITY_CHOICES):
+            return Response(
+                {"visibility": "Invalid visibility."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if visibility == "course" and subject.course is None:
             return Response(
                 {"detail": "General subjects cannot use course visibility."},

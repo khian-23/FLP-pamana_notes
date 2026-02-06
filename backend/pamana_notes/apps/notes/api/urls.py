@@ -50,7 +50,8 @@ urlpatterns = [
     path("notes/<int:pk>/like/", ToggleLikeAPIView.as_view()),
     path("notes/<int:pk>/track-download/", TrackDownloadAPIView.as_view()),
     path("notes/<int:pk>/save/", ToggleSaveAPIView.as_view()),
-    path("notes/<int:pk>/comments/", CommentAPIView.as_view()),
+    # Legacy comment endpoints (kept for backward compatibility)
+    path("notes/<int:pk>/comment-actions/", CommentAPIView.as_view()),
 
     # =====================
     # REVIEWER (ADMIN + MODERATOR)

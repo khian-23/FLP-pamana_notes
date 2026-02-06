@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
+from PIL import Image
 
 from apps.subjects.models import Course, Enrollment
 from .models import Profile, CustomUser
@@ -138,4 +139,12 @@ class ProfileForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Image file too large (max 2MB)."
             )
+        if avatar:
+            try:
+                image = Image.open(avatar)
+                image.verify()
+            except Exception:
+                raise forms.ValidationError(
+                    "Invalid image file."
+                )
         return avatar

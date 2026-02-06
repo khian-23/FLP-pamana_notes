@@ -8,7 +8,6 @@ app_name = "core"
 urlpatterns = [
     path("", views.home, name="home"),
     path("about/", views.about, name="about"),
-    path("create-admin/", create_admin),
 
     # Admin-only API
     path("api/admin/dashboard/", admin_dashboard),

@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
+from django.core.cache import cache
 
 from .forms import (
     StudentUserCreationForm,
@@ -17,16 +18,25 @@ from apps.notes.models import Note
 # LOGIN (STUDENT + ADMIN)
 # ============================
 def login_view(request):
+    ip = request.META.get("REMOTE_ADDR", "unknown")
+    key = f"login:fail:{ip}"
+    fails = cache.get(key, 0)
+    if fails >= 10:
+        messages.error(request, "Too many login attempts. Try again later.")
+        return render(request, "accounts/login.html", {"form": SchoolIDAuthenticationForm()})
+
     if request.method == "POST":
         form = SchoolIDAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            cache.delete(key)
             messages.success(
                 request, f"Welcome back, {user.school_id}!"
             )
             return redirect("core:home")
         else:
+            cache.set(key, fails + 1, timeout=15 * 60)
             messages.error(
                 request, "Invalid School ID or password."
             )
@@ -87,7 +97,7 @@ def profile_view(request):
 
     saved_notes = (
         Note.objects.filter(
-            bookmarked_by__user=request.user,
+            saves__user=request.user,
             is_deleted=False,
             is_approved=True,
         )

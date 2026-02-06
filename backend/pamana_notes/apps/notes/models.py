@@ -16,6 +16,18 @@ def validate_file_type(value):
             "Unsupported file extension. Allowed: PDF, DOCX, PPTX."
         )
 
+    # Basic magic header validation (prevents trivial spoofing)
+    try:
+        header = value.read(8)
+        value.seek(0)
+    except Exception:
+        raise ValidationError("Unable to read uploaded file.")
+
+    if ext == ".pdf" and not header.startswith(b"%PDF-"):
+        raise ValidationError("Invalid PDF file.")
+    if ext in [".docx", ".pptx"] and not header.startswith(b"PK"):
+        raise ValidationError("Invalid Office file.")
+
 
 # --------------------
 # Note Model
@@ -77,40 +89,26 @@ class Note(models.Model):
             return False
 
         if self.is_approved:
+            if user.is_authenticated and (user == self.uploader or user.is_staff):
+                return True
             if self.visibility == self.VISIBILITY_PUBLIC:
                 return True
             if not user.is_authenticated:
                 return False
-            return user == self.uploader or user.is_staff
+            if self.visibility == self.VISIBILITY_SCHOOL:
+                return True
+            if self.visibility == self.VISIBILITY_COURSE:
+                return (
+                    user.course is not None
+                    and self.subject.course is not None
+                    and user.course_id == self.subject.course_id
+                )
+            return False
 
         if not user.is_authenticated:
             return False
 
         return user == self.uploader or user.is_staff
-
-
-# --------------------
-# Bookmark Model
-# --------------------
-class Bookmark(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="bookmarks",
-    )
-    note = models.ForeignKey(
-        Note,
-        on_delete=models.CASCADE,
-        related_name="bookmarked_by",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("user", "note")
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.user.school_id} bookmarked {self.note.title}"
 
 
 # --------------------

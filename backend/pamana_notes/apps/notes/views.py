@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
 from apps.subjects.models import Course
-from .models import Note, Bookmark, Rating, Comment
+from .models import Note, NoteSave, Rating, Comment
 from .forms import NoteForm, CommentForm
 
 
@@ -70,7 +70,7 @@ def notes_list(request):
     page_obj = paginator.get_page(request.GET.get("page"))
 
     saved_notes = (
-        Bookmark.objects.filter(user=request.user)
+        NoteSave.objects.filter(user=request.user)
         .values_list("note_id", flat=True)
         if request.user.is_authenticated else []
     )
@@ -176,7 +176,7 @@ def note_detail(request, pk):
 
     is_saved = False
     if request.user.is_authenticated:
-        is_saved = Bookmark.objects.filter(
+        is_saved = NoteSave.objects.filter(
             user=request.user,
             note=note
         ).exists()
@@ -249,9 +249,11 @@ def note_delete(request, pk):
 # =====================================================
 @login_required
 def toggle_save_note(request, note_id):
-    note = get_object_or_404(Note, id=note_id)
+    note = get_object_or_404(Note, id=note_id, is_deleted=False)
+    if not note.can_view(request.user):
+        raise PermissionDenied
 
-    bookmark, created = Bookmark.objects.get_or_create(
+    bookmark, created = NoteSave.objects.get_or_create(
         user=request.user,
         note=note
     )
@@ -282,7 +284,10 @@ def rate_note(request, pk):
             status=403
         )
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
     value = int(data.get("value", 0))
 
     if value not in [1, 2, 3, 4, 5]:
@@ -331,7 +336,7 @@ def download_note(request, pk):
 @login_required
 def saved_notes_list(request):
     notes = Note.objects.filter(
-        bookmarked_by__user=request.user,
+        saves__user=request.user,
         is_approved=True,
         is_deleted=False
     ).order_by("-uploaded_at")

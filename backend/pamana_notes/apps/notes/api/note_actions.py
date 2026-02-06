@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
+from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import F
 from apps.notes.models import Note, NoteLike, NoteSave, Comment
@@ -9,9 +11,13 @@ from apps.notes.api.serializers import CommentSerializer
 
 class ToggleLikeAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "note_action"
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(Note, pk=pk, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
         like, created = NoteLike.objects.get_or_create(
             user=request.user, note=note
         )
@@ -24,9 +30,13 @@ class ToggleLikeAPIView(APIView):
 
 class ToggleSaveAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "note_action"
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(Note, pk=pk, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
         save, created = NoteSave.objects.get_or_create(
             user=request.user, note=note
         )
@@ -38,9 +48,13 @@ class ToggleSaveAPIView(APIView):
 
 class TrackDownloadAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "note_action"
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(Note, pk=pk, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
         Note.objects.filter(pk=pk).update(
             downloads=F("downloads") + 1
@@ -55,8 +69,13 @@ class TrackDownloadAPIView(APIView):
 
 class CommentAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "comment"
 
     def get(self, request, pk):
+        note = get_object_or_404(Note, pk=pk, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
         comments = Comment.objects.filter(
             note_id=pk,
             parent__isnull=True
@@ -67,7 +86,9 @@ class CommentAPIView(APIView):
         )
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(Note, pk=pk, is_deleted=False)
+        if not note.can_view(request.user):
+            return Response({"detail": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
         Comment.objects.create(
             user=request.user,

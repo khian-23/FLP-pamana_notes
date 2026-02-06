@@ -4,5 +4,5 @@ def site_settings(request):
     return {
         'SITE_NAME': 'PAMANA Notes',
         'CURRENT_YEAR': datetime.now().year,
-        'DEBUG': request.META.get('DEBUG', False)
+        'DEBUG': False
     }
