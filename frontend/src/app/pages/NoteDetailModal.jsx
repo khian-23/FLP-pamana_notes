@@ -183,6 +183,10 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
                 "&:hover": { backgroundColor: "#0f9724" },
               }}
               onClick={async () => {
+                if (!token) {
+                  navigate("/login");
+                  return;
+                }
                 try {
                   const res = await apiFetch(
                     `/api/notes/notes/${note.id}/track-download/`,
@@ -204,6 +208,16 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
             >
               {downloads} Downloads
             </Typography>
+            {!token && (
+              <Typography
+                variant="caption"
+                display="block"
+                textAlign="center"
+                sx={{ mt: 1, color: "#6b7280" }}
+              >
+                Login to download this note.
+              </Typography>
+            )}
           </Box>
         )}
 
@@ -266,6 +280,11 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
               Post
             </Button>
           </Box>
+          {!token && (
+            <Typography variant="caption" sx={{ color: "#6b7280" }}>
+              Login to like, save, comment, or download.
+            </Typography>
+          )}
 
           {comments.map((c) => (
             <Box
