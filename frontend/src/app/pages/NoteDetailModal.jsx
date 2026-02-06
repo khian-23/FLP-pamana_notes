@@ -16,12 +16,10 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toggleSaveNote } from "../../services/noteActions";
-
-const API_BASE = "http://127.0.0.1:8000";
+import { apiFetch } from "../../services/api";
 
 const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
   const token = localStorage.getItem("access");
@@ -46,12 +44,9 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
   useEffect(() => {
     if (!open || !note || !token) return;
 
-    axios
-      .get(`${API_BASE}/api/notes/notes/${note.id}/comments/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const list = res.data?.comments ?? res.data ?? [];
+    apiFetch(`/api/notes/notes/${note.id}/comments/`)
+      .then((data) => {
+        const list = data?.comments ?? data ?? [];
         setComments(Array.isArray(list) ? list : []);
       })
       .catch(() => setComments([]));
@@ -66,13 +61,11 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
 
   const toggleLike = () =>
     requireLogin(async () => {
-      const res = await axios.post(
-        `${API_BASE}/api/notes/notes/${note.id}/like/`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setLiked(res.data.liked);
-      setLikesCount(res.data.likes_count);
+      const res = await apiFetch(`/api/notes/notes/${note.id}/like/`, {
+        method: "POST",
+      });
+      setLiked(res.liked);
+      setLikesCount(res.likes_count);
       setLikeAnim(true);
       setTimeout(() => setLikeAnim(false), 160);
     });
@@ -101,13 +94,12 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
       setText("");
 
       try {
-        const res = await axios.post(
-          `${API_BASE}/api/notes/notes/${note.id}/comments/`,
-          { content: optimistic.content },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await apiFetch(`/api/notes/notes/${note.id}/comments/`, {
+          method: "POST",
+          body: JSON.stringify({ content: optimistic.content }),
+        });
         setComments((prev) =>
-          prev.map((c) => (c.id === optimistic.id ? res.data : c))
+          prev.map((c) => (c.id === optimistic.id ? res : c))
         );
       } catch {
         setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
@@ -115,9 +107,7 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
     });
 
   const deleteComment = async (id) => {
-    await axios.delete(`${API_BASE}/api/notes/comments/${id}/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await apiFetch(`/api/notes/comments/${id}/`, { method: "DELETE" });
     setComments((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -194,12 +184,11 @@ const NoteDetailModal = ({ open, onClose, note, onSaved }) => {
               }}
               onClick={async () => {
                 try {
-                  const res = await axios.post(
-                    `${API_BASE}/api/notes/notes/${note.id}/track-download/`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
+                  const res = await apiFetch(
+                    `/api/notes/notes/${note.id}/track-download/`,
+                    { method: "POST" }
                   );
-                  setDownloads(res.data.downloads);
+                  setDownloads(res.downloads);
                 } catch {}
                 window.open(note.file, "_blank");
               }}

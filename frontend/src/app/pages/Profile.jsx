@@ -98,8 +98,19 @@ export default function Profile() {
       setAvatarFile(null);
       setEditMode(false);
       setSuccess("Profile updated successfully.");
-    } catch {
-      setError("Failed to update profile.");
+    } catch (err) {
+      let msg = "Failed to update profile.";
+      try {
+        const data = JSON.parse(err?.message || "");
+        if (typeof data === "string") msg = data;
+        else if (data?.detail) msg = data.detail;
+        else if (data?.email) msg = data.email;
+        else if (data?.avatar) msg = data.avatar;
+        else if (data?.non_field_errors?.length) {
+          msg = data.non_field_errors[0];
+        }
+      } catch {}
+      setError(msg);
     } finally {
       setSaving(false);
     }

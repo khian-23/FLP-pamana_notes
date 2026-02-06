@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Box, Typography, Grid } from "@mui/material";
 import { getAccessToken } from "../services/auth";
+import { apiFetch } from "../services/api";
 
 export default function PublicNotesPage() {
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/notes/api/public/")
-      .then((res) => res.json())
-      .then(setNotes)
+    apiFetch("/api/notes/public/")
+      .then((data) => setNotes(data?.notes || []))
       .catch(console.error);
   }, []);
 

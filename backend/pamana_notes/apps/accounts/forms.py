@@ -143,6 +143,7 @@ class ProfileForm(forms.ModelForm):
             try:
                 image = Image.open(avatar)
                 image.verify()
+                avatar.seek(0)
             except Exception:
                 raise forms.ValidationError(
                     "Invalid image file."

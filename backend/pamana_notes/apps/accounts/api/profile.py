@@ -104,6 +104,7 @@ class StudentProfileUpdateAPIView(APIView):
             try:
                 image = Image.open(avatar)
                 image.verify()
+                avatar.seek(0)
             except Exception:
                 return Response(
                     {"avatar": "Invalid image file."},

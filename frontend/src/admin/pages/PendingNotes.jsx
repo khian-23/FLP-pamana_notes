@@ -78,15 +78,8 @@ export default function PendingNotes() {
   };
 
   const bulkReject = async () => {
-    await apiFetch("/notes/api/bulk-reject/", {
-      method: "POST",
-      body: JSON.stringify({
-        ids: selectedIds,
-        reason: rejectReason,
-      }),
-    });
-    setRejectOpen(false);
-    await loadNotes();
+    // Disabled: backend endpoint does not exist
+    return;
   };
 
   /* UI */
@@ -101,8 +94,8 @@ export default function PendingNotes() {
           <Button color="success" variant="contained" onClick={bulkApprove}>
             Approve Selected ({selectedIds.length})
           </Button>
-          <Button color="error" variant="contained" onClick={() => openRejectDialog()}>
-            Reject Selected
+          <Button color="error" variant="contained" disabled>
+            Reject Selected (Disabled)
           </Button>
         </Stack>
       )}
@@ -230,7 +223,8 @@ export default function PendingNotes() {
           <Button
             variant="contained"
             color="error"
-            onClick={selectedIds.length ? bulkReject : rejectNote}
+            onClick={selectedIds.length ? undefined : rejectNote}
+            disabled={selectedIds.length > 0}
           >
             Reject
           </Button>

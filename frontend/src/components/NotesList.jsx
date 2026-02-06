@@ -7,12 +7,12 @@ function NotesList() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    apiFetch("/notes/api/notes/")
+    apiFetch("/api/notes/public/")
       .then((data) => {
-        if (!Array.isArray(data)) {
+        if (!data || !Array.isArray(data.notes)) {
           throw new Error("Invalid API response");
         }
-        setNotes(data);
+        setNotes(data.notes);
       })
       .catch(() => setError("Unauthorized or failed to load notes"))
       .finally(() => setLoading(false));

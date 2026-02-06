@@ -93,6 +93,18 @@ class NoteUpdateSerializer(serializers.ModelSerializer):
                 "You do not have permission to edit this note."
             )
 
+        # Visibility rules by subject type
+        visibility = attrs.get("visibility")
+        if visibility:
+            if note.subject.course is not None and visibility != "course":
+                raise serializers.ValidationError(
+                    {"visibility": "Major subjects must use course visibility."}
+                )
+            if note.subject.course is None and visibility == "course":
+                raise serializers.ValidationError(
+                    {"visibility": "General subjects cannot use course visibility."}
+                )
+
         return attrs
 
 

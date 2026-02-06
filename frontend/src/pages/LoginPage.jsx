@@ -17,6 +17,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 import { login, getUserRole } from "../services/auth";
+import { API_BASE } from "../services/api";
 
 export default function LoginPage() {
   const [mode, setMode] = useState("login");
@@ -45,7 +46,7 @@ export default function LoginPage() {
     if (mode !== "register") return;
 
     setLoadingCourses(true);
-    fetch("http://127.0.0.1:8000/api/subjects/courses/public/")
+    fetch(`${API_BASE}/api/subjects/courses/public/`)
       .then((res) => res.json())
       .then(setCourses)
       .finally(() => setLoadingCourses(false));
@@ -91,7 +92,7 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    const res = await fetch("http://127.0.0.1:8000/api/accounts/register/", {
+    const res = await fetch(`${API_BASE}/api/accounts/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

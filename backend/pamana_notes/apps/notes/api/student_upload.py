@@ -91,6 +91,12 @@ class StudentUploadAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if subject.course is not None and visibility != "course":
+            return Response(
+                {"detail": "Major subjects must use course visibility."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if visibility == "course" and subject.course is None:
             return Response(
                 {"detail": "General subjects cannot use course visibility."},

@@ -1,84 +1,85 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
   Box,
+  Typography,
+  CircularProgress,
+  Alert,
   Button,
-  Divider,
 } from "@mui/material";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import { apiFetch } from "../services/api";
 
-const NoteDetailModal = ({ open, onClose, note, token, navigate }) => {
-  if (!note) return null;
+const NoteDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const token = localStorage.getItem("access");
 
-  const requireLogin = () => navigate("/login");
+  const [note, setNote] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // 🚫 hard guard
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchNote = async () => {
+      try {
+        const data = await apiFetch(`/api/notes/notes/${id}/`);
+        setNote(data);
+      } catch (err) {
+        setError("Unable to load note.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNote();
+  }, [id, token, navigate]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  if (!note) {
+    return <Typography>No note found.</Typography>;
+  }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>{note.title}</DialogTitle>
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        {note.title}
+      </Typography>
 
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary">
-          Subject: {note.subject}
-        </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Subject: {note.subject || "N/A"}
+      </Typography>
 
-        <Typography variant="body2">
-          Uploaded by: {note.author_school_id}
-        </Typography>
+      <Typography variant="body2">
+        Uploaded by: {note.author_school_id}
+      </Typography>
 
-        <Divider sx={{ my: 2 }} />
-
-        <Typography variant="body1">
-          {note.description || "No description provided."}
-        </Typography>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* ACTIONS */}
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Button
-            startIcon={<FavoriteBorderIcon />}
-            onClick={token ? () => {} : requireLogin}
-          >
-            Like
-          </Button>
-
-          <Button
-            startIcon={<BookmarkBorderIcon />}
-            onClick={token ? () => {} : requireLogin}
-          >
-            Save
-          </Button>
-
-          <Button
-            startIcon={<ChatBubbleOutlineIcon />}
-            onClick={token ? () => {} : requireLogin}
-          >
-            Comment
-          </Button>
-        </Box>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-
+      {note.file && (
         <Button
           variant="contained"
-          onClick={() =>
-            token
-              ? window.open(note.file, "_blank")
-              : navigate("/login")
-          }
+          sx={{ mt: 3 }}
+          onClick={() => window.open(note.file, "_blank")}
         >
-          {token ? "Download File" : "Login to Download"}
+          Open File
         </Button>
-      </DialogActions>
-    </Dialog>
+      )}
+    </Box>
   );
 };
 
-export default NoteDetailModal;
+export default NoteDetail;

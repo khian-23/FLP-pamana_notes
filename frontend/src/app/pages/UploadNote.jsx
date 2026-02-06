@@ -12,8 +12,40 @@ import {
   Stack,
   Divider,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { apiFetch, API_BASE } from "../../services/api";
+
+async function uploadWithProgress(url, formData, token, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      onProgress?.(Math.round((e.loaded * 100) / e.total));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(xhr.responseText ? JSON.parse(xhr.responseText) : null);
+        } catch {
+          resolve(null);
+        }
+      } else {
+        try {
+          const data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+          reject(data);
+        } catch {
+          reject({ detail: "Upload failed." });
+        }
+      }
+    };
+    xhr.onerror = () => reject({ detail: "Network error." });
+    xhr.send(formData);
+  });
+}
 
 const UploadNote = () => {
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -35,15 +67,18 @@ const UploadNote = () => {
     const token = localStorage.getItem("access");
     if (!token) return;
 
-    axios
-      .get("http://127.0.0.1:8000/api/subjects/student/", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setSubjects(res.data))
+    apiFetch("/api/subjects/student/")
+      .then((data) => setSubjects(data))
       .catch(() => setSubjects([]));
   }, []);
 
   useEffect(() => {
+    if (form.subject?.type === "Major") {
+      if (form.visibility !== "course") {
+        setForm((prev) => ({ ...prev, visibility: "course" }));
+      }
+      return;
+    }
     if (form.subject?.type === "General" && form.visibility === "course") {
       setForm((prev) => ({ ...prev, visibility: "school" }));
     }
@@ -74,24 +109,19 @@ const UploadNote = () => {
     try {
       setProgress(0);
 
-      await axios.post(
-        "http://127.0.0.1:8000/notes/api/student/upload/",
+      await uploadWithProgress(
+        `${API_BASE}/notes/api/student/upload/`,
         data,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          onUploadProgress: (e) => {
-            if (!e.total) return;
-            setProgress(Math.round((e.loaded * 100) / e.total));
-          },
-        }
+        token,
+        (pct) => setProgress(pct)
       );
 
       setSuccess("Note submitted successfully for review.");
       setTimeout(() => navigate("/app/my-notes"), 900);
     } catch (err) {
       setError(
-        err?.response?.data?.detail ||
-          err?.response?.data?.file ||
+        err?.detail ||
+          err?.file ||
           "Upload failed."
       );
     }
@@ -181,9 +211,20 @@ const UploadNote = () => {
             onChange={(e) =>
               setForm({ ...form, visibility: e.target.value })
             }
+            helperText={
+              form.subject?.type === "Major"
+                ? "Major subjects are restricted to Course visibility."
+                : form.subject?.type === "General"
+                  ? "General subjects cannot be Course visibility."
+                  : ""
+            }
           >
-            <MenuItem value="public">Public</MenuItem>
-            <MenuItem value="school">School</MenuItem>
+            <MenuItem value="public" disabled={form.subject?.type === "Major"}>
+              Public
+            </MenuItem>
+            <MenuItem value="school" disabled={form.subject?.type === "Major"}>
+              School
+            </MenuItem>
             <MenuItem
               value="course"
               disabled={form.subject?.type === "General"}
